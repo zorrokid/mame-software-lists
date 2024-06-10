@@ -10,7 +10,10 @@ pub fn read_dir(path: &str) {
                         println!("{}", path.display());
                         if path.extension().map_or(false, |ext| ext == "xml") {
                             match path.to_str() {
-                                Some(path) => parse_file(path),
+                                Some(path) => {
+                                   let result = parse_file(path);
+                                   println!("{:?}", result);
+                                }
                                 None => println!("Error converting path to string"),
                             }
                         }

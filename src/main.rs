@@ -15,7 +15,6 @@ fn handle_args() -> String {
 
 
 fn main() {
-
     let path = handle_args();
     read_dir(&path);
 }
