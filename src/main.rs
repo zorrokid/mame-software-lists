@@ -1,5 +1,6 @@
 mod file_reader;
 mod xml_parser;
+mod models;
 
 use file_reader::read_dir;
 
