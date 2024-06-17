@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use crate::{schema::software_list, software_list_models::{DataFile, Header, Machine, Rom}};
+use crate::schema::software_list;
 use crate::models;
 
 pub fn insert_software_list(conn: &mut SqliteConnection, software_list: models::SoftwareList) -> Result<(), diesel::result::Error> {
@@ -13,11 +13,11 @@ pub fn get_software_lists(conn: &mut SqliteConnection) -> Result<Vec<models::Sof
     software_list::table.load::<models::SoftwareList>(conn)
 }
 
-pub fn software_list_exists(conn: &mut SqliteConnection, name: String, version: String) -> bool {
+pub fn software_list_exists(conn: &mut SqliteConnection, sofware_list_name: String, software_list_version: String) -> bool {
     use crate::schema::software_list::dsl::*;
     let results = software_list
-        .filter(name.eq(name))
-        .filter(version.eq(version))
+        .filter(name.eq(sofware_list_name))
+        .filter(version.eq(software_list_version))
         .limit(1)
         .load::<models::SoftwareList>(conn)
         .expect("Error loading software list");
@@ -25,9 +25,9 @@ pub fn software_list_exists(conn: &mut SqliteConnection, name: String, version: 
     results.len() > 0
 }
 
-pub fn delete_software_list(conn: &mut SqliteConnection, name: String, version: String) -> Result<(), diesel::result::Error> {
+pub fn delete_software_list(conn: &mut SqliteConnection, software_list_name: String, software_list_version: String) -> Result<(), diesel::result::Error> {
     use crate::schema::software_list::dsl::*;
-    diesel::delete(software_list.filter(name.eq(name)).filter(version.eq(version)))
+    diesel::delete(software_list.filter(name.eq(software_list_name)).filter(version.eq(software_list_version)))
         .execute(conn)
         .map(|_| ())
 }
