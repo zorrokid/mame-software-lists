@@ -25,6 +25,18 @@ pub fn get_software_lists(conn: &mut SqliteConnection) -> Result<Vec<models::Sof
     software_list::table.load::<models::SoftwareList>(conn)
 }
 
+pub fn software_list_exists(conn: &mut SqliteConnection, name: String, version: String) -> bool {
+    use crate::schema::software_list::dsl::*;
+    let results = software_list
+        .filter(name.eq(name))
+        .filter(version.eq(version))
+        .limit(1)
+        .load::<models::SoftwareList>(conn)
+        .expect("Error loading software list");
+
+    results.len() > 0
+}
+
 
 
 /*use diesel::prelude::*;
