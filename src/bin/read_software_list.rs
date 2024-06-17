@@ -1,6 +1,5 @@
-use mame_software_lists::database::insert_software_list;
 use mame_software_lists::database::establish_connection;
-use mame_software_lists::database::software_list_exists;
+use mame_software_lists::database::software_lists::{software_list_exists, insert_software_list};
 use mame_software_lists::xml_parser::parse_file;
 use mame_software_lists::models;
 

@@ -1,5 +1,5 @@
 use mame_software_lists::database::establish_connection;
-use mame_software_lists::database::get_software_lists;
+use mame_software_lists::database::software_lists::get_software_lists;
 
 fn main() {
     let connection = &mut establish_connection();
