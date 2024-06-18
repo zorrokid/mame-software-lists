@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::str::FromStr;
 
 #[derive(Debug, Deserialize)]
 pub struct Rom {
@@ -15,9 +16,22 @@ pub struct Machine {
     #[serde(rename = "name")]
     pub name: String,
     pub description: String,
-    pub year: String,
+    #[serde(deserialize_with = "deserialize_optional_number")]
+    pub year: Option<u32>,
     pub publisher: String,
     pub rom: Vec<Rom>,
+}
+
+fn deserialize_optional_number<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+
+    match u32::from_str(&s) {
+        Ok(num) => Ok(Some(num)),
+        Err(_) => Ok(None),
+    }
 }
 
 #[derive(Debug, Deserialize)]

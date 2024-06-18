@@ -4,7 +4,7 @@ diesel::table! {
     machine (id) {
         id -> Nullable<Integer>,
         description -> Text,
-        year -> Integer,
+        year -> Nullable<Integer>,
         publisher -> Text,
         software_list_id -> Integer,
     }

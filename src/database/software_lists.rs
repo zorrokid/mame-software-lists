@@ -9,6 +9,7 @@ pub fn insert_software_list(conn: &mut SqliteConnection, software_list: models::
         .map(|_| ())
 }
 
+
 pub fn get_software_lists(conn: &mut SqliteConnection) -> Result<Vec<models::SoftwareList>, diesel::result::Error> {
     software_list::table.load::<models::SoftwareList>(conn)
 }

@@ -3,6 +3,7 @@ use dotenvy::dotenv;
 use std::env;
 
 pub mod software_lists;
+pub mod machines;
 
 pub fn establish_connection() -> SqliteConnection {
     dotenv().ok();
