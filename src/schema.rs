@@ -1,8 +1,8 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    machine (id) {
-        id -> Nullable<Integer>,
+    machines (id) {
+        id -> Integer,
         description -> Text,
         year -> Nullable<Integer>,
         publisher -> Text,
@@ -11,19 +11,25 @@ diesel::table! {
 }
 
 diesel::table! {
-    rom (id) {
-        id -> Nullable<Integer>,
-        name -> Text,
-        size -> Integer,
-        crc -> Text,
-        sha1 -> Text,
+    machines_roms (machine_id, rom_id) {
         machine_id -> Integer,
+        rom_id -> Integer,
     }
 }
 
 diesel::table! {
-    software_list (id) {
-        id -> Nullable<Integer>,
+    roms (id) {
+        id -> Integer,
+        name -> Text,
+        size -> Integer,
+        crc -> Text,
+        sha1 -> Text,
+    }
+}
+
+diesel::table! {
+    software_lists (id) {
+        id -> Integer,
         name -> Text,
         description -> Text,
         version -> Text,
@@ -31,11 +37,13 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(machine -> software_list (software_list_id));
-diesel::joinable!(rom -> machine (machine_id));
+diesel::joinable!(machines -> software_lists (software_list_id));
+diesel::joinable!(machines_roms -> machines (machine_id));
+diesel::joinable!(machines_roms -> roms (rom_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    machine,
-    rom,
-    software_list,
+    machines,
+    machines_roms,
+    roms,
+    software_lists,
 );

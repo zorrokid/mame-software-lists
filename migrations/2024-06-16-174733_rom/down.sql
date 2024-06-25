@@ -1,1 +1,1 @@
-DROP TABLE rom
+DROP TABLE roms

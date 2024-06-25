@@ -4,6 +4,7 @@ use std::env;
 
 pub mod software_lists;
 pub mod machines;
+pub mod roms;
 
 pub fn establish_connection() -> SqliteConnection {
     dotenv().ok();

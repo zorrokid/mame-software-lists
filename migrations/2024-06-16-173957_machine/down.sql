@@ -1,1 +1,1 @@
-DROP TABLE machine
+DROP TABLE machines

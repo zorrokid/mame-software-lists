@@ -1,1 +1,1 @@
-DROP TABLE software_list
+DROP TABLE software_lists
