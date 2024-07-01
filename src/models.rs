@@ -30,6 +30,7 @@ pub struct Rom {
     pub size: i32,
     pub crc: String,
     pub sha1: String,
+    pub have: bool,
 }
 
 

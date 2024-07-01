@@ -1,4 +1,8 @@
-pub fn scan_archives(path: String) {
+use std::collections::HashMap;
+
+use crate::models;
+
+pub fn scan_archives(path: String, roms_in_software_list: HashMap<String, models::Rom>) {
     // read the files in the directory
     let dir_entries = std::fs::read_dir(path).unwrap();
     for dir_entry in dir_entries {
@@ -19,7 +23,7 @@ pub fn scan_archives(path: String) {
                 let file = archive.by_index(i).unwrap();
                 let file_name = file.name();
                 print!("{} ", file_name);
-                }
+            }
         }
     }
 }
