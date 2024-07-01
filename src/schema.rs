@@ -24,6 +24,7 @@ diesel::table! {
         size -> Integer,
         crc -> Text,
         sha1 -> Text,
+        have -> Bool,
     }
 }
 
