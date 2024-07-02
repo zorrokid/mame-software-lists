@@ -1,0 +1,16 @@
+[
+     {
+        "id": "sms",
+        "name": "Sega Master System",
+        "extensions": [
+            "sms"
+        ]
+    },
+    {
+        "id": "gg",
+        "name": "Game Gear",
+        "extensions": [
+            "gg"
+        ]
+    }
+]
