@@ -34,5 +34,8 @@ fn main() {
         }
     };
 
-    scan_archives(path, roms_in_software_list);
+    let matched_ids = scan_archives(path, roms_in_software_list);
+    for id in matched_ids {
+        println!("Matched id: {}", id);
+    }
 }

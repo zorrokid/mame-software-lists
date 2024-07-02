@@ -4,7 +4,8 @@ use sha1::{Digest, Sha1};
 
 use crate::models;
 
-pub fn scan_archives(path: String, roms_in_software_list: HashMap<String, models::Rom>) {
+pub fn scan_archives(path: String, roms_in_software_list: HashMap<String, models::Rom>) -> Vec<i32> {
+    let mut matched_ids: Vec<i32> = Vec::new();
     // read the files in the directory
     let dir_entries = std::fs::read_dir(path).unwrap();
     for dir_entry in dir_entries {
@@ -43,8 +44,13 @@ pub fn scan_archives(path: String, roms_in_software_list: HashMap<String, models
                     hasher.update(&buffer[..bytes_read]);
                 } 
                 let sha_1 = hasher.finalize();
+                let sha_1_str = format!("{:x}", sha_1);
                 println!("{:x}", sha_1);
+                if roms_in_software_list.contains_key(&sha_1_str) {
+                    matched_ids.push(roms_in_software_list.get(&sha_1_str).unwrap().id);
+                }
             }
         }
     }
+    matched_ids
 }
