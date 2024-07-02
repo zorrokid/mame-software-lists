@@ -28,7 +28,7 @@ pub fn scan_archives(path: String, roms_in_software_list: HashMap<String, models
                 print!("{} ", file_name);
 
                 // Calculate SHA1 hash of the file
-                let mut hasher = sha1::Sha1::new();
+                let mut hasher = Sha1::new();
 
                 // buffer to read the file in chunks of 1024 bytes, 
                 // initialize it with zeros
