@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::io::Read;
+use sha1::{Digest, Sha1};
 
 use crate::models;
 
@@ -20,9 +22,28 @@ pub fn scan_archives(path: String, roms_in_software_list: HashMap<String, models
             };
             // read the files in the archive
             for i in 0..archive.len() {
-                let file = archive.by_index(i).unwrap();
+                let mut file = archive.by_index(i).unwrap();
                 let file_name = file.name();
                 print!("{} ", file_name);
+
+                // Calculate SHA1 hash of the file
+                let mut hasher = sha1::Sha1::new();
+
+                // buffer to read the file in chunks of 1024 bytes, 
+                // initialize it with zeros
+                let mut buffer = [0; 1024];
+                loop {
+                    // TODO: handle errors
+                    let bytes_read = file.read(&mut buffer).unwrap();
+                    // is the end of the file reached?
+                    if bytes_read == 0 {
+                        break;
+                    }
+                    // slice valid bytes from the buffer and update the hash
+                    hasher.update(&buffer[..bytes_read]);
+                } 
+                let sha_1 = hasher.finalize();
+                println!("{:x}", sha_1);
             }
         }
     }

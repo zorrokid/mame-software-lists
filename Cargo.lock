@@ -446,6 +446,7 @@ dependencies = [
  "libsqlite3-sys",
  "serde",
  "serde-xml-rs",
+ "sha1",
  "xml-rs",
  "zip",
 ]
