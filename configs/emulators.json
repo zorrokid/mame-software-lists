@@ -15,5 +15,15 @@
             "sms",
             "gg"
         ]
+    },
+    {
+        "id": "mednafen-sms",
+        "description": "Mednafen",
+        "executable": "mednafen",
+        "arguments": ["-force_module", "sms"],
+        "supported_systems": [
+            "sms"
+        ]
     }
+
 ]
