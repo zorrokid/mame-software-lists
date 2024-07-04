@@ -1,0 +1,19 @@
+[
+    {
+        "id": "mednafen",
+        "description": "Mednafen",
+        "executable": "mednafen",
+        "arguments": [],
+        "supported_systems": [
+            "nes",
+            "snes",
+            "gb",
+            "gba",
+            "pce",
+            "lynx",
+            "ngp",
+            "sms",
+            "gg"
+        ]
+    }
+]

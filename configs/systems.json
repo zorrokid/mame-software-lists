@@ -4,6 +4,8 @@
         "name": "Sega Master System",
         "extensions": [
             "sms"
+        ],
+        "file_paths" : [
         ]
     },
     {
@@ -11,6 +13,17 @@
         "name": "Game Gear",
         "extensions": [
             "gg"
+        ],
+        "file_paths": [
+        ]
+    },
+    {
+        "id": "nes",
+        "name": "Nintendo Entertainment System",
+        "extensions": [
+            "nes"
+        ],
+        "file_paths": [
         ]
     }
 ]
