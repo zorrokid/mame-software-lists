@@ -37,7 +37,8 @@ pub fn process_from_datafile(path: String){
                                     machines::description.eq(machine.description.clone()),
                                     machines::year.eq(machine.year.map(|x| x as i32)),
                                     machines::publisher.eq(machine.publisher),
-                                    machines::software_list_id.eq(inserted_software_list_id)
+                                    machines::software_list_id.eq(inserted_software_list_id),
+                                    machines::name.eq(machine.name)
                                 ))
                                 .returning(machines::id)
                                 .get_result(connection)?;

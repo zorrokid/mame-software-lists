@@ -20,6 +20,7 @@ pub struct Machine {
     pub year: Option<i32>,
     pub publisher: String,
     pub software_list_id: i32,
+    pub name: String,
 }
 
 #[derive(Queryable, Selectable, Identifiable, Debug, PartialEq)]

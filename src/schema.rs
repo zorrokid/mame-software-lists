@@ -7,6 +7,7 @@ diesel::table! {
         year -> Nullable<Integer>,
         publisher -> Text,
         software_list_id -> Integer,
+        name -> Text,
     }
 }
 
