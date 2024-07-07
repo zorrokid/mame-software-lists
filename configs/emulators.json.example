@@ -1,0 +1,13 @@
+[
+    {
+        "system": "sms",
+        "emulators": [
+            {
+                "id": "mednafen-sms",
+                "description": "Mednafen",
+                "executable": "mednafen",
+                "arguments": ["-force_module", "sms"]
+            }
+        ]
+    }
+]
