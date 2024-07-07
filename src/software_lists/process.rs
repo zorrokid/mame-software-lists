@@ -4,6 +4,7 @@ use diesel::prelude::*;
 
 use crate::database::establish_connection;
 use crate::database::software_lists::*;
+use crate::database::systems::db_get_system;
 use crate::xml_parser::parse_file;
 use crate::schema::{software_lists, machines, roms};
 
@@ -20,12 +21,26 @@ pub fn process_from_datafile(path: String){
                 false => {
                     match connection.transaction(|connection|{
 
+                        let system_name = datafile.header.name;
+                        let system = db_get_system(connection, system_name.clone())?;
+                        let system_id = match system {
+                            Some(system) => system.id,
+                            None => {
+                                let inserted_system_id: i32 = diesel::insert_into(crate::schema::systems::table)
+                                    .values(crate::schema::systems::name.eq(system_name.clone()))
+                                    .returning(crate::schema::systems::id)
+                                    .get_result(connection)?;
+                                inserted_system_id
+                            }
+                        };
+
                         let inserted_software_list_id: i32 = diesel::insert_into(software_lists::table)
                             .values((
-                                software_lists::name.eq(datafile.header.name),
+                                software_lists::name.eq(system_name),
                                 software_lists::description.eq(datafile.header.description),
                                 software_lists::version.eq(datafile.header.version),
-                                software_lists::author.eq(datafile.header.author)
+                                software_lists::author.eq(datafile.header.author),
+                                software_lists::system_id.eq(system_id)
 
                             ))
                             .returning(software_lists::id)

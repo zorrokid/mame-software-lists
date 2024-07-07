@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use crate::schema::{machines, roms, software_lists,  machines_roms};
+use crate::schema::{machines, roms, software_lists,  machines_roms, systems};
 
 #[derive(Queryable, Selectable, Identifiable, Debug, PartialEq)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
@@ -9,6 +9,7 @@ pub struct SoftwareList {
     pub description: String,
     pub version: String,
     pub author: String,
+    pub system_id: Option<i32>,
 }
 
 #[derive(Queryable, Selectable, Identifiable, Associations, Debug, PartialEq)]
@@ -34,7 +35,6 @@ pub struct Rom {
     pub have: bool,
 }
 
-
 #[derive(Queryable, Selectable, Identifiable, Associations)]
 #[diesel(belongs_to(Machine))]
 #[diesel(belongs_to(Rom))]
@@ -44,4 +44,10 @@ pub struct Rom {
 pub struct MachineRom {
     pub machine_id: i32,
     pub rom_id: i32,
+}
+
+#[derive(Queryable, Selectable)]
+pub struct System {
+    pub id: i32,
+    pub name: String
 }

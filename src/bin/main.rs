@@ -1,12 +1,13 @@
 use eframe::egui;
-use mame_software_lists::systems::systems::read_systems;
-use mame_software_lists::systems::systems::System;
-use mame_software_lists::models::Machine;
+use mame_software_lists::models::{Machine, System};
+use mame_software_lists::database::establish_connection;
+use mame_software_lists::database::systems::db_get_systems;
 
 fn main() -> Result<(), eframe::Error> {
+    let connection = &mut establish_connection();
     let options = eframe::NativeOptions::default();
-    let systems = read_systems("configs/systems.json".to_string());
-    let app = MyApp::new(systems);
+    let systems = db_get_systems(connection);
+    let app = MyApp::new(systems.unwrap());
     eframe::run_native(
         "Mame Software Lists", 
         options, 
@@ -17,8 +18,8 @@ fn main() -> Result<(), eframe::Error> {
 #[derive(Default)]
 struct MyApp {
     systems: Vec<System>,
-    selected_system_id: String,
-    previous_selected_system_id: String,
+    selected_system_id: i32,
+    previous_selected_system_id: i32,
     machines: Vec<Machine>,
 }
 
@@ -26,14 +27,14 @@ impl MyApp {
     fn new(systems: Vec<System>) -> Self {
         Self {
             systems,
-            selected_system_id: String::new(),
-            previous_selected_system_id: String::new(),
+            selected_system_id: 0,
+            previous_selected_system_id: 0,
             machines: Vec::new(),
             ..Default::default()
         }
     }
 
-    fn fetch_data_for_system(&mut self, system_id: &String) {
+    fn fetch_data_for_system(&mut self, system_id: i32) {
         println!("Fetching data for system: {:?}", system_id);
         self.machines = vec![
             Machine {
@@ -76,7 +77,7 @@ impl eframe::App for MyApp {
                 });
 
             if let Some(system_id) = new_selected_systemid {
-                self.fetch_data_for_system(&system_id);
+                self.fetch_data_for_system(system_id);
                 self.previous_selected_system_id = system_id;
             }
 

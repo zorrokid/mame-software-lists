@@ -36,16 +36,26 @@ diesel::table! {
         description -> Text,
         version -> Text,
         author -> Text,
+        system_id -> Nullable<Integer>,
+    }
+}
+
+diesel::table! {
+    systems (id) {
+        id -> Integer,
+        name -> Text,
     }
 }
 
 diesel::joinable!(machines -> software_lists (software_list_id));
 diesel::joinable!(machines_roms -> machines (machine_id));
 diesel::joinable!(machines_roms -> roms (rom_id));
+diesel::joinable!(software_lists -> systems (system_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     machines,
     machines_roms,
     roms,
     software_lists,
+    systems,
 );

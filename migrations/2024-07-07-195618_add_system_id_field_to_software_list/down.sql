@@ -1,0 +1,1 @@
+ALTER TABLE software_lists DROP COLUMN system_id;
