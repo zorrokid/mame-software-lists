@@ -1,3 +1,5 @@
+pub const PATHS_CONFIG_PATH: &str = "configs/paths.json";
+
 #[derive(serde::Deserialize, Debug, Clone)]
 pub struct Paths{
     pub software_lists_data_files_folder: String,

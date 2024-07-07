@@ -1,5 +1,7 @@
 use std::error::Error;
 
+pub const EMULATORS_CONFIG_PATH: &str = "configs/emulators.json";
+
 #[derive(serde::Deserialize, Debug, Clone)]
 pub struct Emulator{
     pub id: String,

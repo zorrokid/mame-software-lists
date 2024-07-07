@@ -1,20 +1,19 @@
 use std::error::Error;
 use std::process::Command;
 use diesel::SqliteConnection;
-use serde_json::error;
 
 use crate::database::machines::db_get_machine;
-use crate::configuration::emulators::{get_emulators_by_system_id, read_emulators};
-use crate::configuration::paths::read_paths;
+use crate::configuration::emulators::{get_emulators_by_system_id, read_emulators, EMULATORS_CONFIG_PATH};
+use crate::configuration::paths::{read_paths, PATHS_CONFIG_PATH};
 
 
 pub fn run_with_emulator(conn: &mut SqliteConnection, system_id: String, emulator_id: String, software_list_machine_id: i32) -> Result<(), Box<dyn Error>> {
-    let emulators = read_emulators("configs/emulators.json".to_string());
+    let emulators = read_emulators(EMULATORS_CONFIG_PATH.to_string());
     let emulators_for_system = get_emulators_by_system_id(system_id.clone(), &emulators)?;
     let emulator = emulators_for_system.iter().find(|e| e.id == emulator_id).unwrap();
     println!("Running emulator: {}", emulator.description);
 
-    let paths = read_paths("configs/paths.json".to_string());
+    let paths = read_paths(PATHS_CONFIG_PATH.to_string());
     let roms_path = paths.software_lists_roms_folder.clone();
     println!("Roms path is: {}", roms_path.clone());
 
