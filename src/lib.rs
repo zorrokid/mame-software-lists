@@ -7,3 +7,4 @@ pub mod software_lists;
 pub mod files;
 pub mod systems;
 pub mod emulators;
+pub mod configuration;

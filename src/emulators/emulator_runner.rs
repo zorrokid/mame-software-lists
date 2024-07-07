@@ -1,29 +1,27 @@
 use std::error::Error;
 use std::process::Command;
 use diesel::SqliteConnection;
+use serde_json::error;
 
 use crate::database::machines::db_get_machine;
-use crate::systems::systems::get_system_by_id;
+use crate::configuration::emulators::{get_emulators_by_system_id, read_emulators};
+use crate::configuration::paths::read_paths;
 
-#[derive(serde::Deserialize, Debug, Clone)]
-pub struct Emulator{
-    pub id: String,
-    pub description: String,
-    pub executable: String,
-    pub arguments: Vec<String>,
-    pub supported_systems: Vec<String>,
-}
 
 pub fn run_with_emulator(conn: &mut SqliteConnection, system_id: String, emulator_id: String, software_list_machine_id: i32) -> Result<(), Box<dyn Error>> {
-    let emulator = get_emulator_by_id(emulator_id.clone())?;
+    let emulators = read_emulators("configs/emulators.json".to_string());
+    let emulators_for_system = get_emulators_by_system_id(system_id.clone(), &emulators)?;
+    let emulator = emulators_for_system.iter().find(|e| e.id == emulator_id).unwrap();
     println!("Running emulator: {}", emulator.description);
-    if !emulator.supported_systems.contains(&system_id) {
-        return Err("System not supported by emulator".into());
-    }
-    let system = get_system_by_id(system_id.clone())?;
+
+    let paths = read_paths("configs/paths.json".to_string());
+    let roms_path = paths.software_lists_roms_folder.clone();
+    println!("Roms path is: {}", roms_path.clone());
+
     let machine = db_get_machine(conn, software_list_machine_id.clone())?;
-    let file_path = get_machine_file_path(&machine, &system)?;
-    println!("Running machine: {}", machine.name);
+    println!("Machine is: {:?}", machine);
+
+    let file_path = get_machine_file_path(&machine, &system_id, &roms_path)?;
     println!("File path: {}", file_path.clone());
     println!("Running emulator {} with arguments {:?}", emulator.executable, emulator.arguments);
     let output = Command::new(emulator.executable.clone())
@@ -45,27 +43,14 @@ fn get_machine_file_name(machine: &crate::models::Machine) -> String {
     filename
 }
 
-pub fn get_machine_file_path(machine: &crate::models::Machine, system: &crate::systems::systems::System) -> Result<String, Box<dyn Error>>{
+pub fn get_machine_file_path(machine: &crate::models::Machine, system_id: &String, roms_path: &String) -> Result<String, Box<dyn Error>>{
     let filename = get_machine_file_name(machine);
-    for path in system.file_paths.iter() {
-        let full_path = format!("{}/{}", path, filename);
-        if std::path::Path::new(&full_path).exists() {
-            return Ok(full_path);
-        }
-    }
-    return Err("Machine file not found".into());
-}
+    let path = format!("{}/{}/{}", roms_path, system_id, filename);
 
-pub fn get_emulator_by_id(emulator_id: String) -> Result<Emulator, Box<dyn Error>> {
-    let emulators = read_emulators("configs/emulators.json".to_string());
-    match emulators.iter().find(|e| e.id == emulator_id) {
-        Some(emulator) => Ok(emulator.clone()),
-        None => Err("Emulator not found".into()),
+    if std::path::Path::new(&path).exists() {
+        return Ok(path.clone());
     }
-}
+    let error_msg = format!("Machine file not found in path {}", path);
+    return Err(error_msg.into());
 
-pub fn read_emulators(path: String) -> Vec<Emulator>{
-    let file = std::fs::File::open(path).unwrap();
-    let reader = std::io::BufReader::new(file);
-    serde_json::from_reader(reader).unwrap()
 }
