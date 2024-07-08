@@ -26,6 +26,12 @@ pub fn software_list_exists(conn: &mut SqliteConnection, sofware_list_name: Stri
     results.len() > 0
 }
 
+pub fn db_get_software_lists_for_system(conn: &mut SqliteConnection, input_system_id: i32) -> Result<Vec<models::SoftwareList>, diesel::result::Error> {
+    use crate::schema::software_lists::dsl::*;
+    software_lists.filter(system_id.eq(input_system_id))
+        .load::<models::SoftwareList>(conn)
+}
+
 pub fn delete_software_list(conn: &mut SqliteConnection, software_list_name: String, software_list_version: String) -> Result<(), diesel::result::Error> {
     use crate::schema::software_lists::dsl::*;
     diesel::delete(software_lists.filter(name.eq(software_list_name)).filter(version.eq(software_list_version)))
