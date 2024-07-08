@@ -1,37 +1,33 @@
+use diesel::SqliteConnection;
 use eframe::egui;
-use crate::models::{Machine, System};
+use crate::{database::software_lists::db_get_software_lists_for_system, models::{Machine, System, SoftwareList}};
 
-#[derive(Default)]
 pub struct MameSoftwareListApp {
     systems: Vec<System>,
     selected_system_id: i32,
     previous_selected_system_id: i32,
     machines: Vec<Machine>,
+    connection: Box<SqliteConnection>,
+    software_lists: Vec<SoftwareList>,
 }
 
 impl MameSoftwareListApp {
-    pub fn new(systems: Vec<System>) -> Self {
+    pub fn new(connection: Box<SqliteConnection>, systems: Vec<System>) -> Self {
         Self {
             systems,
             selected_system_id: 0,
             previous_selected_system_id: 0,
             machines: Vec::new(),
-            ..Default::default()
+            software_lists: Vec::new(),
+            connection,
         }
     }
 
-    fn fetch_data_for_system(&mut self, system_id: i32) {
-        println!("Fetching data for system: {:?}", system_id);
-        self.machines = vec![
-            Machine {
-                id: 1,
-                description: "Description 1".to_string(),
-                year: Some(2021),
-                name: "Machine 1".to_string(),
-                publisher: "Publisher 1".to_string(),
-                software_list_id: 1,
-            },
-        ];
+    fn fetch_software_lists_for_system(&mut self, system_id: i32) {
+        self.software_lists = db_get_software_lists_for_system(
+            self.connection.as_mut(), 
+            system_id
+        ).unwrap();
     }
 }
 
@@ -63,7 +59,7 @@ impl eframe::App for MameSoftwareListApp {
                 });
 
             if let Some(system_id) = new_selected_systemid {
-                self.fetch_data_for_system(system_id);
+                self.fetch_software_lists_for_system(system_id);
                 self.previous_selected_system_id = system_id;
             }
 
