@@ -12,3 +12,9 @@ pub fn db_get_machine(conn: &mut SqliteConnection, input_id: i32) -> Result<Mach
     machines.filter(id.eq(input_id))
         .first(conn)
 }
+
+pub fn db_get_machines_for_software_list(conn: &mut SqliteConnection, input_software_list_id: i32) -> Result<Vec<Machine>, diesel::result::Error> {
+    use crate::schema::machines::dsl::*;
+    machines.filter(software_list_id.eq(input_software_list_id))
+        .load(conn)
+}

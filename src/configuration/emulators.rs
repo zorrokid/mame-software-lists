@@ -16,8 +16,9 @@ pub struct EmulatorsBySystem{
     pub emulators: Vec<Emulator>,
 }
 
-pub fn get_emulators_by_system_id(system_id: String, emulators_by_system: &Vec<EmulatorsBySystem>) -> Result<Vec<Emulator>, Box<dyn Error>> {
-    let emulators_filtered_by_system = emulators_by_system.iter().find(|e| e.system == system_id).unwrap();
+pub fn get_emulators_by_system_id(system_id: String) -> Result<Vec<Emulator>, Box<dyn Error>> {
+    let all_emulators = read_emulators(EMULATORS_CONFIG_PATH.to_string());
+    let emulators_filtered_by_system = all_emulators.iter().find(|e| e.system == system_id).unwrap();
     let result = emulators_filtered_by_system.emulators.clone();
     Ok(result)
 }

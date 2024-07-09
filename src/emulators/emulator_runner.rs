@@ -1,15 +1,13 @@
 use std::error::Error;
 use std::process::Command;
-use diesel::SqliteConnection;
 
-use crate::database::machines::db_get_machine;
-use crate::configuration::emulators::{get_emulators_by_system_id, read_emulators, EMULATORS_CONFIG_PATH};
+use crate::configuration::emulators::get_emulators_by_system_id;
 use crate::configuration::paths::{read_paths, PATHS_CONFIG_PATH};
+use crate::models::Machine;
 
 
-pub fn run_with_emulator(conn: &mut SqliteConnection, system_id: String, emulator_id: String, software_list_machine_id: i32) -> Result<(), Box<dyn Error>> {
-    let emulators = read_emulators(EMULATORS_CONFIG_PATH.to_string());
-    let emulators_for_system = get_emulators_by_system_id(system_id.clone(), &emulators)?;
+pub fn run_with_emulator(machine: &Machine, system_id: String, emulator_id: String) -> Result<(), Box<dyn Error>> {
+    let emulators_for_system = get_emulators_by_system_id(system_id.clone())?;
     let emulator = emulators_for_system.iter().find(|e| e.id == emulator_id).unwrap();
     println!("Running emulator: {}", emulator.description);
 
@@ -17,7 +15,6 @@ pub fn run_with_emulator(conn: &mut SqliteConnection, system_id: String, emulato
     let roms_path = paths.software_lists_roms_folder.clone();
     println!("Roms path is: {}", roms_path.clone());
 
-    let machine = db_get_machine(conn, software_list_machine_id.clone())?;
     println!("Machine is: {:?}", machine);
 
     let file_path = get_machine_file_path(&machine, &system_id, &roms_path)?;

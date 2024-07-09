@@ -37,7 +37,11 @@ impl<'a> SystemsComboBox<'a> {
             )
             .show_ui(self.ui, |ui| {
                 for system in self.systems.iter() {
-                    if ui.selectable_value(self.selected_system_id, system.id.clone(), system.name.clone()).clicked() {
+                    if ui.selectable_value(
+                        self.selected_system_id, 
+                        system.id.clone(), 
+                        system.name.clone()
+                    ).clicked() {
                         if *self.selected_system_id != *self.previous_selected_system_id {
                             *self.new_selected_systemid = Some(self.selected_system_id.clone());
                         }

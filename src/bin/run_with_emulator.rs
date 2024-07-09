@@ -1,5 +1,6 @@
 use mame_software_lists::database::establish_connection;
 use mame_software_lists::emulators::emulator_runner::run_with_emulator;
+use mame_software_lists::database::machines::db_get_machine;
 
 fn handle_args() -> (String, String, i32){
     let args: Vec<String> = std::env::args().collect();
@@ -24,7 +25,8 @@ fn main() {
 
     let (system_id, emulator_id, software_list_machine_id) = handle_args();
     let connection = &mut establish_connection();
-    match run_with_emulator(connection, system_id, emulator_id, software_list_machine_id) {
+    let machine = db_get_machine(connection, software_list_machine_id.clone()).unwrap();
+    match run_with_emulator(&machine, system_id, emulator_id) {
         Ok(_) => println!("Emulator ran successfully"),
         Err(e) => println!("Error running emulator: {}", e),
     }
