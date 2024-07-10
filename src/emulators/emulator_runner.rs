@@ -23,14 +23,18 @@ pub fn run_with_emulator(machine: &Machine, system_id: String, emulator_id: Stri
     let output = Command::new(emulator.executable.clone())
         .args(emulator.arguments.clone())
         .arg(file_path.clone())
-        .output()?;
+        .spawn();
 
-    if output.status.success() == false {
-        let error_message = String::from_utf8(output.stderr).unwrap();
-        return Err(error_message.into());
-    } 
 
-    return Ok(());
+    match output {
+        Ok(_) => return Ok(()),
+        Err(e) => {
+            println!("Error running emulator: {}", e);
+            return Err(e.into());
+        }
+    }
+
+    
 }
 
 fn get_machine_file_name(machine: &crate::models::Machine) -> String {

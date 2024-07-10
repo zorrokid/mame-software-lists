@@ -144,24 +144,18 @@ impl eframe::App for MameSoftwareListApp {
                     };
                     let emulator_id = self.selected_emulator_id.clone();
 
-                    let (tx, rx) = mpsc::channel();
-
-                    thread::spawn(move || {
-                        let result = run_with_emulator(&machine_clone, system_name, emulator_id);
-                        let result_was_ok = result.is_ok();
-                        tx.send(result_was_ok).unwrap();
-                    });
-
-                    if let Ok(result) = rx.recv() {
-                        match result{
-                            true => {
+                    // start run_with_emulator in a new thread
+                    let handle = thread::spawn(move || {
+                        match run_with_emulator(&machine_clone, system_name, emulator_id){
+                            Ok(_)=> {
                                 println!("Emulator started successfully");
                             },
-                            false => {
-                                println!("Error starting emulator");
+                            Err(e) => {
+                                println!("Error starting emulator {}", e);
                             }
                         }
-                    };
+                    });
+                    handle.join().unwrap();
                 }   
             }
         });
