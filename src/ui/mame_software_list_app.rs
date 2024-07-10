@@ -1,6 +1,5 @@
-use std::sync::mpsc;
 use std::thread;
-use diesel::{result, SqliteConnection};
+use diesel::SqliteConnection;
 use eframe::egui;
 use crate::{
     configuration::emulators::{get_emulators_by_system_id, Emulator}, database::{machines::db_get_machines_for_software_list, software_lists::db_get_software_lists_for_system}, emulators::emulator_runner::run_with_emulator, models::{Machine, SoftwareList, System}
