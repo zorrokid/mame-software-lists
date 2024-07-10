@@ -32,7 +32,7 @@ impl<'a> MachinesList<'a> {
                 &self.machines
                     .iter()
                     .find(|s| s.id == *self.selected_machine_id)
-                    .map(|s| s.name.clone())
+                    .map(|s| s.description.clone())
                     .unwrap_or_default()
             )
             .show_ui(self.ui, |ui| {
@@ -40,7 +40,7 @@ impl<'a> MachinesList<'a> {
                     if ui.selectable_value(
                         self.selected_machine_id, 
                         machine.id.clone(), 
-                        machine.name.clone()
+                        machine.description.clone()
                     ).clicked() {
                         if *self.selected_machine_id != *self.previous_selected_machine_id {
                             *self.new_selected_machine_id = Some(self.selected_machine_id.clone());
