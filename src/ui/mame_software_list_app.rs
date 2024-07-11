@@ -64,15 +64,8 @@ impl MameSoftwareListApp {
     }
 
     fn start_button_clicked(&self) {
-        println!("Selected system: {:?}", self.selected_system_id);
         if self.selected_machine_id != 0 && self.selected_emulator_id != "" {
-            println!("Selected machine: {:?}", self.selected_machine_id);
-            println!(
-                "Selected software list: {:?}",
-                self.selected_software_list_id
-            );
-            println!("Selected emulator: {:?}", self.selected_emulator_id);
-
+        
             // Clone the values to pass them to the thread closure
             let system_name = self
                 .systems
@@ -86,6 +79,7 @@ impl MameSoftwareListApp {
                 .iter()
                 .find(|m| m.id == self.selected_machine_id)
                 .unwrap();
+            // TODO: why is this now working?
             //let machine_clone = machine.clone();
             let machine_clone = Machine {
                 id: self.selected_machine_id,
@@ -103,6 +97,7 @@ impl MameSoftwareListApp {
                         println!("Emulator started successfully");
                     }
                     Err(e) => {
+                        // TODO: show error in UI
                         println!("Error starting emulator {}", e);
                     }
                 }
