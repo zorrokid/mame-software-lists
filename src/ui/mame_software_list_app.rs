@@ -3,6 +3,7 @@ use crate::{
     database::{
         machines::db_get_machines_for_software_list,
         software_lists::db_get_software_lists_for_system,
+        systems::db_get_systems,
     },
     emulators::emulator_runner::run_with_emulator,
     models::{Machine, SoftwareList, System}, software_lists::process::process_from_datafile,
@@ -71,6 +72,16 @@ impl MameSoftwareListApp {
             Ok(emulators) => emulators,
             Err(e) => {
                 self.error_messages.push(format!("Error getting emulators: {}", e));
+                Vec::new()
+            }
+        }
+    }
+
+    fn fetch_systems(&mut self) {   
+        self.systems = match db_get_systems(self.connection.as_mut()) {
+            Ok(systems) => systems,
+            Err(e) => {
+                self.error_messages.push(format!("Error getting systems: {}", e));
                 Vec::new()
             }
         }
@@ -147,6 +158,7 @@ impl MameSoftwareListApp {
                     println!("Processing finished");
                 }
                 self.file_dialog_receiver = None;
+                self.fetch_systems();
             }
         }
     }
