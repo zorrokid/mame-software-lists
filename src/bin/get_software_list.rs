@@ -1,7 +1,7 @@
 use mame_software_lists::database::establish_connection;
 use mame_software_lists::software_lists::fetch_software_list::fetch_software_list_roms;
 
-fn handle_args() -> i32{
+fn handle_args() -> i32 {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
         println!("Usage: {} <id of software list>", args[0]);
@@ -21,10 +21,10 @@ fn handle_args() -> i32{
 fn main() {
     let id = handle_args();
     let connection = &mut establish_connection();
-    match fetch_software_list_roms(connection, id){
+    match fetch_software_list_roms(connection, id) {
         Ok(roms_in_software_list) => {
             println!("{:?}", roms_in_software_list);
-        },
+        }
         Err(e) => println!("Error fetching software list: {}", e),
     }
 }

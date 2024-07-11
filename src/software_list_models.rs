@@ -49,4 +49,3 @@ pub struct DataFile {
     #[serde(rename = "machine")]
     pub machines: Vec<Machine>,
 }
-

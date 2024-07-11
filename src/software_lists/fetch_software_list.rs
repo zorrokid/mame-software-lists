@@ -2,13 +2,15 @@ use std::collections::HashMap;
 
 use diesel::SqliteConnection;
 
-use crate::models;
-use crate::database::software_lists::db_get_software_list;
 use crate::database::machines::db_get_machines;
 use crate::database::roms::db_get_roms;
+use crate::database::software_lists::db_get_software_list;
+use crate::models;
 
-pub fn fetch_software_list_roms(connection: &mut SqliteConnection, id: i32) -> Result<HashMap<String, models::Rom>, diesel::result::Error> {
-
+pub fn fetch_software_list_roms(
+    connection: &mut SqliteConnection,
+    id: i32,
+) -> Result<HashMap<String, models::Rom>, diesel::result::Error> {
     let software_list = db_get_software_list(connection, id)?;
     println!("{:?}", software_list);
     let machines = db_get_machines(connection, &software_list)?;

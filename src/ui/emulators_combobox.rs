@@ -1,5 +1,5 @@
-use eframe::egui;
 use crate::configuration::emulators::Emulator;
+use eframe::egui;
 
 struct EmulatorsCombobox<'a> {
     ui: &'a mut egui::Ui,
@@ -27,16 +27,18 @@ impl<'a> EmulatorsCombobox<'a> {
                     .iter()
                     .find(|s| s.id == *self.selected_emulator_id)
                     .map(|s| s.description.clone())
-                    .unwrap_or_default()
+                    .unwrap_or_default(),
             )
             .show_ui(self.ui, |ui| {
                 for emulator in self.emulators.iter() {
-                    if ui.selectable_value(
-                        self.selected_emulator_id, 
-                        emulator.id.clone(), 
-                        emulator.description.clone()
-                    ).clicked() {
-                    }
+                    if ui
+                        .selectable_value(
+                            self.selected_emulator_id,
+                            emulator.id.clone(),
+                            emulator.description.clone(),
+                        )
+                        .clicked()
+                    {}
                 }
             });
     }

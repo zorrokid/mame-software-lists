@@ -25,10 +25,8 @@ fn main() {
     let (id, path) = handle_args();
     let connection = &mut establish_connection();
 
-    let roms_in_software_list = match fetch_software_list_roms(connection, id){
-        Ok(software_list) => {
-            software_list
-        },
+    let roms_in_software_list = match fetch_software_list_roms(connection, id) {
+        Ok(software_list) => software_list,
         Err(e) => {
             println!("Error fetching software list: {}", e);
             std::process::exit(1);

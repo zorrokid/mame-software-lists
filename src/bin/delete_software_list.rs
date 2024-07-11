@@ -10,8 +10,7 @@ fn handle_args() -> (String, String) {
     (args[1].clone(), args[2].clone())
 }
 
-
-fn main(){
+fn main() {
     let args = handle_args();
     let connection = &mut establish_connection();
     match delete_software_list(connection, args.0, args.1) {

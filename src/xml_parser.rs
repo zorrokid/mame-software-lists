@@ -1,6 +1,6 @@
+use serde_xml_rs::from_reader;
 use std::fs::File;
 use std::io::BufReader;
-use serde_xml_rs::from_reader;
 
 use super::software_list_models::DataFile;
 

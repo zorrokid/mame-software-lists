@@ -1,5 +1,5 @@
+use crate::schema::{machines, machines_roms, roms, software_lists, systems};
 use diesel::prelude::*;
-use crate::schema::{machines, roms, software_lists,  machines_roms, systems};
 
 #[derive(Queryable, Selectable, Identifiable, Debug, PartialEq)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
@@ -49,5 +49,5 @@ pub struct MachineRom {
 #[derive(Queryable, Selectable)]
 pub struct System {
     pub id: i32,
-    pub name: String
+    pub name: String,
 }

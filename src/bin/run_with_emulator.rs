@@ -1,11 +1,14 @@
 use mame_software_lists::database::establish_connection;
-use mame_software_lists::emulators::emulator_runner::run_with_emulator;
 use mame_software_lists::database::machines::db_get_machine;
+use mame_software_lists::emulators::emulator_runner::run_with_emulator;
 
-fn handle_args() -> (String, String, i32){
+fn handle_args() -> (String, String, i32) {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 3 {
-        println!("Usage: {} <system id> <emulator id> <software list machine id>", args[0]);
+        println!(
+            "Usage: {} <system id> <emulator id> <software list machine id>",
+            args[0]
+        );
         std::process::exit(1);
     }
     let system_id = args[1].clone();
@@ -22,7 +25,6 @@ fn handle_args() -> (String, String, i32){
 }
 
 fn main() {
-
     let (system_id, emulator_id, software_list_machine_id) = handle_args();
     let connection = &mut establish_connection();
     let machine = db_get_machine(connection, software_list_machine_id.clone()).unwrap();
