@@ -9,6 +9,7 @@ use crate::{
 };
 use diesel::SqliteConnection;
 use eframe::egui;
+use rfd::FileDialog;
 use std::thread;
 
 use super::{
@@ -113,7 +114,10 @@ impl eframe::App for MameSoftwareListApp {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("Add Software Lists data file").clicked() {
-                        // TODO
+                        if let Some(path) = FileDialog::new().pick_file() { 
+                            println!("File path: {:?}", path);
+                            // TODO
+                        }
                     }
                     if ui.button("Quit").clicked() {
                         std::process::exit(0);
