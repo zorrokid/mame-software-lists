@@ -20,9 +20,11 @@ pub fn get_emulators_by_system_id(system_id: String) -> Result<Vec<Emulator>, Bo
     let all_emulators = read_emulators(EMULATORS_CONFIG_PATH.to_string());
     let emulators_filtered_by_system = all_emulators
         .iter()
-        .find(|e| e.system == system_id)
-        .unwrap();
-    let result = emulators_filtered_by_system.emulators.clone();
+        .find(|e| e.system == system_id);
+    if emulators_filtered_by_system.is_none() {
+        return Err("No emulators found for system".into());
+    }
+    let result = emulators_filtered_by_system.unwrap().emulators.clone();
     Ok(result)
 }
 

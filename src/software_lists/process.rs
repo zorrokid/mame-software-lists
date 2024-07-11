@@ -2,14 +2,12 @@ use diesel::prelude::*;
 use diesel::Connection;
 use diesel::RunQueryDsl;
 
-use crate::database::establish_connection;
 use crate::database::software_lists::*;
 use crate::database::systems::db_get_system;
 use crate::schema::{machines, roms, software_lists};
 use crate::xml_parser::parse_file;
 
-pub fn process_from_datafile(path: String) {
-    let connection = &mut establish_connection();
+pub fn process_from_datafile(connection: &mut SqliteConnection, path: String) {
     match parse_file(&path) {
         Ok(datafile) => {
             match software_list_exists(

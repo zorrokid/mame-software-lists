@@ -1,12 +1,11 @@
 use crate::{
-    configuration::emulators::{get_emulators_by_system_id, Emulator},
-    configuration::paths::Paths,
+    configuration::{emulators::{get_emulators_by_system_id, Emulator}, paths::Paths},
     database::{
         machines::db_get_machines_for_software_list,
         software_lists::db_get_software_lists_for_system,
     },
     emulators::emulator_runner::run_with_emulator,
-    models::{Machine, SoftwareList, System},
+    models::{Machine, SoftwareList, System}, software_lists::process::process_from_datafile,
 };
 use diesel::SqliteConnection;
 use eframe::egui;
@@ -66,7 +65,13 @@ impl MameSoftwareListApp {
     }
 
     fn fetch_emulators_for_system(&mut self, system_name: String) {
-        self.emulators = get_emulators_by_system_id(system_name).unwrap()
+        self.emulators = match get_emulators_by_system_id(system_name) {
+            Ok(emulators) => emulators,
+            Err(e) => {
+                println!("Error getting emulators: {}", e);
+                Vec::new()
+            }
+        }
     }
 
     fn start_button_clicked(&self) {
@@ -135,7 +140,9 @@ impl MameSoftwareListApp {
         if let Some(receiver) = &self.file_dialog_receiver {
             if let Ok(path) = receiver.try_recv() {
                 if let Some(path) = path {
-                    println!("Selected file: {:?}", path);
+                    println!("Selected file: {:?} ... start processing", path);
+                    process_from_datafile(self.connection.as_mut(), path.to_string_lossy().into_owned());
+                    println!("Processing finished");
                 }
                 self.file_dialog_receiver = None;
             }
