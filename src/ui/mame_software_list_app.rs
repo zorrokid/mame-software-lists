@@ -32,6 +32,7 @@ pub struct MameSoftwareListApp {
     selected_emulator_id: String,
     paths: Paths,
     file_dialog_receiver: Option<mpsc::Receiver<Option<PathBuf>>>,
+    error_messages: Vec<String>,
 }
 
 impl MameSoftwareListApp {
@@ -51,6 +52,7 @@ impl MameSoftwareListApp {
             selected_emulator_id: String::new(),
             paths,
             file_dialog_receiver: None,
+            error_messages: Vec::new(),
         }
     }
 
@@ -68,7 +70,7 @@ impl MameSoftwareListApp {
         self.emulators = match get_emulators_by_system_id(system_name) {
             Ok(emulators) => emulators,
             Err(e) => {
-                println!("Error getting emulators: {}", e);
+                self.error_messages.push(format!("Error getting emulators: {}", e));
                 Vec::new()
             }
         }
@@ -227,6 +229,15 @@ impl eframe::App for MameSoftwareListApp {
             }
 
             self.check_file_dialog_receiver();
+        });
+
+        egui::TopBottomPanel::bottom("error_console").show(ctx, |ui| {
+            ui.heading("Error Console");
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                for error in &self.error_messages {
+                    ui.label(error);
+                }
+            });
         });
     }
 }
