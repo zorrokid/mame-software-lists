@@ -4,9 +4,10 @@ use crate::{
         machines::db_get_machines_for_software_list,
         software_lists::db_get_software_lists_for_system,
         systems::db_get_systems,
+        roms::db_get_roms,
     },
     emulators::emulator_runner::run_with_emulator,
-    models::{Machine, SoftwareList, System}, software_lists::process::process_from_datafile,
+    models::{Machine, SoftwareList, System, Rom}, software_lists::process::process_from_datafile,
 };
 use diesel::SqliteConnection;
 use eframe::egui;
@@ -16,6 +17,7 @@ use std::{path::PathBuf, sync::mpsc, thread};
 use super::{
     emulators_combobox::show_emulators_combobox, machines_list::show_machines_list,
     software_lists_combobox::show_software_lists_combobox, systems_combobox::show_systems_combobox,
+    roms_list::show_roms_list,
 };
 
 pub struct MameSoftwareListApp {
@@ -34,6 +36,9 @@ pub struct MameSoftwareListApp {
     paths: Paths,
     file_dialog_receiver: Option<mpsc::Receiver<Option<PathBuf>>>,
     error_messages: Vec<String>,
+    roms: Vec<Rom>,
+    selected_rom_id: i32,
+    previous_selected_rom_id: i32,
 }
 
 impl MameSoftwareListApp {
@@ -54,6 +59,9 @@ impl MameSoftwareListApp {
             paths,
             file_dialog_receiver: None,
             error_messages: Vec::new(),
+            roms: Vec::new(),
+            selected_rom_id: 0,
+            previous_selected_rom_id: 0,
         }
     }
 
@@ -65,6 +73,15 @@ impl MameSoftwareListApp {
     fn fetch_machines_for_software_list(&mut self, s_list_id: i32) {
         self.machines =
             db_get_machines_for_software_list(self.connection.as_mut(), s_list_id).unwrap();
+    }
+
+    fn fetch_roms_for_machine(&mut self, machine_id: i32) {
+        let machine = self
+            .machines
+            .iter()
+            .find(|m| m.id == machine_id)
+            .unwrap();
+        self.roms = db_get_roms(self.connection.as_mut(), machine).unwrap();
     }
 
     fn fetch_emulators_for_system(&mut self, system_name: String) {
@@ -162,6 +179,7 @@ impl MameSoftwareListApp {
             }
         }
     }
+
 }
 
 impl eframe::App for MameSoftwareListApp {
@@ -185,6 +203,7 @@ impl eframe::App for MameSoftwareListApp {
             let mut new_selected_systemid = None;
             let mut new_selected_software_list_id = None;
             let mut new_selected_machine_id = None;
+            let mut new_selected_rom_id = None;
 
             ui.horizontal(|ui| {
                 show_systems_combobox(
@@ -210,13 +229,24 @@ impl eframe::App for MameSoftwareListApp {
                 }
             });
 
-            show_machines_list(
-                ui,
-                &self.machines,
-                &mut self.selected_machine_id,
-                &mut self.previous_selected_machine_id,
-                &mut new_selected_machine_id,
-            );
+            ui.add_sized(ui.available_size(), |ui: &mut egui::Ui| {
+                ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+                    show_machines_list(
+                        ui,
+                        &self.machines,
+                        &mut self.selected_machine_id,
+                        &mut self.previous_selected_machine_id,
+                        &mut new_selected_machine_id,
+                    );
+                    show_roms_list(
+                        ui,
+                        &self.roms,
+                        &mut self.selected_rom_id,
+                        &mut self.previous_selected_rom_id,
+                        &mut new_selected_rom_id,
+                    );
+                }).response
+            });
 
             if let Some(system_id) = new_selected_systemid {
                 self.fetch_software_lists_for_system(system_id);
@@ -237,7 +267,12 @@ impl eframe::App for MameSoftwareListApp {
             }
 
             if let Some(machine_id) = new_selected_machine_id {
+                self.fetch_roms_for_machine(machine_id);
                 self.previous_selected_machine_id = machine_id;
+            }
+
+            if let Some(rom_id) = new_selected_rom_id {
+                self.previous_selected_rom_id = rom_id;
             }
 
             self.check_file_dialog_receiver();

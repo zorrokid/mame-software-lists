@@ -27,29 +27,31 @@ impl<'a> MachinesList<'a> {
     }
 
     pub fn show(&mut self) {
-        egui::ScrollArea::vertical().show(self.ui, |ui| {
-            egui::Grid::new("machines_table").show(ui, |ui| {
-                ui.label("Name");
-                ui.label("Year");
-                ui.end_row();
-
-                for machine in self.machines.iter() {
-                    if ui
-                        .selectable_value(
-                            self.selected_machine_id,
-                            machine.id.clone(),
-                            machine.description.clone(),
-                        )
-                        .clicked()
-                    {
-                        if *self.selected_machine_id != *self.previous_selected_machine_id {
-                            *self.new_selected_machine_id = Some(self.selected_machine_id.clone());
-                        }
-                    }
-                    ui.label(&machine.year.unwrap_or_default().to_string());
+        egui::ScrollArea::vertical()
+            .id_source("machines_scroll_area")
+            .show(self.ui, |ui| {
+                egui::Grid::new("machines_table").show(ui, |ui| {
+                    ui.label("Name");
+                    ui.label("Year");
                     ui.end_row();
-                }
-            });
+
+                    for machine in self.machines.iter() {
+                        if ui
+                            .selectable_value(
+                                self.selected_machine_id,
+                                machine.id.clone(),
+                                machine.description.clone(),
+                            )
+                            .clicked()
+                        {
+                            if *self.selected_machine_id != *self.previous_selected_machine_id {
+                                *self.new_selected_machine_id = Some(self.selected_machine_id.clone());
+                            }
+                        }
+                        ui.label(&machine.year.unwrap_or_default().to_string());
+                        ui.end_row();
+                    }
+                });
         });
     }
 }
