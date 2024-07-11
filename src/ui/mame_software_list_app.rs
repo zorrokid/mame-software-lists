@@ -72,37 +72,67 @@ impl eframe::App for MameSoftwareListApp {
             ui.label("This is a simple app to manage Mame Software Lists");
             
             let mut new_selected_systemid = None;
-
-            show_systems_combobox(
-                ui, 
-                &self.systems,
-                &mut self.selected_system_id, 
-                &mut self.previous_selected_system_id, 
-                &mut new_selected_systemid,
-            );
-
-            if let Some(system_id) = new_selected_systemid {
-                self.fetch_software_lists_for_system(system_id);
-                let system_name = self.systems.iter().find(|s| s.id == system_id).unwrap().name.clone();
-                self.fetch_emulators_for_system(system_name);
-                self.previous_selected_system_id = system_id;
-            }
-
             let mut new_selected_software_list_id = None;
-
-            show_software_lists_combobox(
-                ui, 
-                &self.software_lists,
-                &mut self.selected_software_list_id,
-                &mut self.previous_selected_software_list_id, 
-                &mut new_selected_software_list_id);
-
-            if let Some(s_list_id) = new_selected_software_list_id{
-                self.fetch_machines_for_software_list(s_list_id);
-                self.previous_selected_software_list_id= s_list_id;
-            }
-
             let mut new_selected_machine_id = None;
+
+            ui.horizontal(|ui| {
+                show_systems_combobox(
+                    ui, 
+                    &self.systems,
+                    &mut self.selected_system_id, 
+                    &mut self.previous_selected_system_id, 
+                    &mut new_selected_systemid,
+                );
+
+                show_software_lists_combobox(
+                    ui, 
+                    &self.software_lists,
+                    &mut self.selected_software_list_id,
+                    &mut self.previous_selected_software_list_id, 
+                    &mut new_selected_software_list_id);
+
+                show_emulators_combobox(
+                    ui, 
+                    &self.emulators,
+                    &mut self.selected_emulator_id,
+                );
+
+                if ui.button("Click me").clicked() {
+                    println!("Selected system: {:?}", self.selected_system_id);
+                    if self.selected_machine_id != 0 {
+                        println!("Selected machine: {:?}", self.selected_machine_id);
+                        println!("Selected software list: {:?}", self.selected_software_list_id);
+                        println!("Selected emulator: {:?}", self.selected_emulator_id);
+
+                        // Clone the values to pass them to the thread closure
+                        let system_name = self.systems.iter().find(|s| s.id == self.selected_system_id).unwrap().name.clone();
+                        let machine = self.machines.iter().find(|m| m.id == self.selected_machine_id).unwrap();
+                        //let machine_clone = machine.clone();
+                        let machine_clone = Machine {
+                            id: self.selected_machine_id,
+                            name: machine.name.clone(),
+                            description: machine.description.clone(),
+                            year: machine.year.clone(),
+                            publisher: machine.publisher.clone(),
+                            software_list_id: self.selected_software_list_id,
+                        };
+                        let emulator_id = self.selected_emulator_id.clone();
+
+                        // start run_with_emulator in a new thread
+                        let handle = thread::spawn(move || {
+                            match run_with_emulator(&machine_clone, system_name, emulator_id){
+                                Ok(_)=> {
+                                    println!("Emulator started successfully");
+                                },
+                                Err(e) => {
+                                    println!("Error starting emulator {}", e);
+                                }
+                            }
+                        });
+                        handle.join().unwrap();
+                    }   
+                }
+            });
 
             show_machines_list(
                 ui, 
@@ -111,52 +141,22 @@ impl eframe::App for MameSoftwareListApp {
                 &mut self.previous_selected_machine_id, 
                 &mut new_selected_machine_id);
 
+            if let Some(system_id) = new_selected_systemid {
+                self.fetch_software_lists_for_system(system_id);
+                let system_name = self.systems.iter().find(|s| s.id == system_id).unwrap().name.clone();
+                self.fetch_emulators_for_system(system_name);
+                self.previous_selected_system_id = system_id;
+            }
+
+            if let Some(s_list_id) = new_selected_software_list_id{
+                self.fetch_machines_for_software_list(s_list_id);
+                self.previous_selected_software_list_id= s_list_id;
+            }
+
             if let Some(machine_id) = new_selected_machine_id {
                 self.previous_selected_machine_id = machine_id;
             }
 
-            show_emulators_combobox(
-                ui, 
-                &self.emulators,
-                &mut self.selected_emulator_id,
-            );
-
-
-            if ui.button("Click me").clicked() {
-                println!("Selected system: {:?}", self.selected_system_id);
-                if self.selected_machine_id != 0 {
-                    println!("Selected machine: {:?}", self.selected_machine_id);
-                    println!("Selected software list: {:?}", self.selected_software_list_id);
-                    println!("Selected emulator: {:?}", self.selected_emulator_id);
-
-                    // Clone the values to pass them to the thread closure
-                    let system_name = self.systems.iter().find(|s| s.id == self.selected_system_id).unwrap().name.clone();
-                    let machine = self.machines.iter().find(|m| m.id == self.selected_machine_id).unwrap();
-                    //let machine_clone = machine.clone();
-                    let machine_clone = Machine {
-                        id: self.selected_machine_id,
-                        name: machine.name.clone(),
-                        description: machine.description.clone(),
-                        year: machine.year.clone(),
-                        publisher: machine.publisher.clone(),
-                        software_list_id: self.selected_software_list_id,
-                    };
-                    let emulator_id = self.selected_emulator_id.clone();
-
-                    // start run_with_emulator in a new thread
-                    let handle = thread::spawn(move || {
-                        match run_with_emulator(&machine_clone, system_name, emulator_id){
-                            Ok(_)=> {
-                                println!("Emulator started successfully");
-                            },
-                            Err(e) => {
-                                println!("Error starting emulator {}", e);
-                            }
-                        }
-                    });
-                    handle.join().unwrap();
-                }   
-            }
-        });
+       });
     }
 }
