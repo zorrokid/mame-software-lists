@@ -28,8 +28,6 @@ impl<'a> MachinesList<'a> {
 
     pub fn show(&mut self) {
         egui::ScrollArea::vertical()
-            .max_height(300.0)
-            .max_width(500.0)
             .show(self.ui, |ui| {
                 egui::Grid::new("machines_table").show(ui, |ui| {
                     ui.label("Name");
