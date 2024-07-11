@@ -6,8 +6,8 @@ pub struct Paths {
     pub software_lists_roms_folder: String,
 }
 
-pub fn read_paths(path: String) -> Paths {
-    let file = std::fs::File::open(path).unwrap();
+pub fn read_paths() -> Paths {
+    let file = std::fs::File::open(PATHS_CONFIG_PATH).unwrap();
     let reader = std::io::BufReader::new(file);
     serde_json::from_reader(reader).unwrap()
 }

@@ -1,5 +1,6 @@
 use crate::{
     configuration::emulators::{get_emulators_by_system_id, Emulator},
+    configuration::paths::Paths,
     database::{
         machines::db_get_machines_for_software_list,
         software_lists::db_get_software_lists_for_system,
@@ -10,7 +11,7 @@ use crate::{
 use diesel::SqliteConnection;
 use eframe::egui;
 use rfd::FileDialog;
-use std::thread;
+use std::{path::PathBuf, sync::mpsc, thread};
 
 use super::{
     emulators_combobox::show_emulators_combobox, machines_list::show_machines_list,
@@ -30,10 +31,12 @@ pub struct MameSoftwareListApp {
     software_lists: Vec<SoftwareList>,
     emulators: Vec<Emulator>,
     selected_emulator_id: String,
+    paths: Paths,
+    file_dialog_receiver: Option<mpsc::Receiver<Option<PathBuf>>>,
 }
 
 impl MameSoftwareListApp {
-    pub fn new(connection: Box<SqliteConnection>, systems: Vec<System>) -> Self {
+    pub fn new(connection: Box<SqliteConnection>, systems: Vec<System>, paths: Paths) -> Self {
         Self {
             systems,
             selected_system_id: 0,
@@ -47,6 +50,8 @@ impl MameSoftwareListApp {
             connection,
             emulators: Vec::new(),
             selected_emulator_id: String::new(),
+            paths,
+            file_dialog_receiver: None,
         }
     }
 
@@ -106,6 +111,36 @@ impl MameSoftwareListApp {
             handle.join().unwrap();
         }
     }
+
+    fn add_software_list_data_file(&mut self) {
+        let dat_file_folder = self.paths.software_lists_data_files_folder.clone();
+        let (sender, receiver) = mpsc::channel();
+
+        thread::spawn(move || {
+            if let Some(path) = FileDialog::new()
+                .set_directory(dat_file_folder)
+                .pick_file()
+            {
+                sender.send(Some(path)).unwrap();
+            } else {
+                sender.send(None).unwrap();
+            }
+        });
+
+        self.file_dialog_receiver = Some(receiver);
+
+    }
+
+    fn check_file_dialog_receiver(&mut self) {
+        if let Some(receiver) = &self.file_dialog_receiver {
+            if let Ok(path) = receiver.try_recv() {
+                if let Some(path) = path {
+                    println!("Selected file: {:?}", path);
+                }
+                self.file_dialog_receiver = None;
+            }
+        }
+    }
 }
 
 impl eframe::App for MameSoftwareListApp {
@@ -114,10 +149,7 @@ impl eframe::App for MameSoftwareListApp {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("Add Software Lists data file").clicked() {
-                        if let Some(path) = FileDialog::new().pick_file() { 
-                            println!("File path: {:?}", path);
-                            // TODO
-                        }
+                        self.add_software_list_data_file();
                     }
                     if ui.button("Quit").clicked() {
                         std::process::exit(0);
@@ -186,6 +218,8 @@ impl eframe::App for MameSoftwareListApp {
             if let Some(machine_id) = new_selected_machine_id {
                 self.previous_selected_machine_id = machine_id;
             }
+
+            self.check_file_dialog_receiver();
         });
     }
 }

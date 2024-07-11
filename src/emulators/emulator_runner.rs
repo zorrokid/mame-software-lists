@@ -2,7 +2,7 @@ use std::error::Error;
 use std::process::Command;
 
 use crate::configuration::emulators::get_emulators_by_system_id;
-use crate::configuration::paths::{read_paths, PATHS_CONFIG_PATH};
+use crate::configuration::paths::{read_paths};
 use crate::models::Machine;
 
 pub fn run_with_emulator(
@@ -17,7 +17,7 @@ pub fn run_with_emulator(
         .unwrap();
     println!("Running emulator: {}", emulator.description);
 
-    let paths = read_paths(PATHS_CONFIG_PATH.to_string());
+    let paths = read_paths();
     let roms_path = paths.software_lists_roms_folder.clone();
     println!("Roms path is: {}", roms_path.clone());
 
