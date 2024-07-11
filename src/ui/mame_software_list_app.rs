@@ -69,7 +69,7 @@ impl eframe::App for MameSoftwareListApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Mame Software Lists");
-            ui.label("This is a simple app to manage Mame Software Lists");
+            ui.label("This is a simple app to start software from Mame Software Lists");
             
             let mut new_selected_systemid = None;
             let mut new_selected_software_list_id = None;
@@ -97,9 +97,9 @@ impl eframe::App for MameSoftwareListApp {
                     &mut self.selected_emulator_id,
                 );
 
-                if ui.button("Click me").clicked() {
+                if ui.button("Start").clicked() {
                     println!("Selected system: {:?}", self.selected_system_id);
-                    if self.selected_machine_id != 0 {
+                    if self.selected_machine_id != 0 && self.selected_emulator_id != ""{
                         println!("Selected machine: {:?}", self.selected_machine_id);
                         println!("Selected software list: {:?}", self.selected_software_list_id);
                         println!("Selected emulator: {:?}", self.selected_emulator_id);
