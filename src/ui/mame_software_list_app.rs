@@ -109,6 +109,18 @@ impl MameSoftwareListApp {
 
 impl eframe::App for MameSoftwareListApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            egui::menu::bar(ui, |ui| {
+                ui.menu_button("File", |ui| {
+                    if ui.button("Add Software Lists data file").clicked() {
+                        // TODO
+                    }
+                    if ui.button("Quit").clicked() {
+                        std::process::exit(0);
+                    }
+                });
+           })
+        });
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Mame Software Lists");
             ui.label("This is a simple app to start software from Mame Software Lists");
