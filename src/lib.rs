@@ -1,10 +1,11 @@
+pub mod archives;
+pub mod configuration;
+pub mod database;
+pub mod emulators;
+pub mod files;
 pub mod models;
 pub mod schema;
-pub mod database;
-pub mod xml_parser;
 pub mod software_list_models;
 pub mod software_lists;
-pub mod files;
-pub mod emulators;
-pub mod configuration;
 pub mod ui;
+pub mod xml_parser;

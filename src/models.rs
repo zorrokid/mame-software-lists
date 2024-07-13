@@ -24,7 +24,7 @@ pub struct Machine {
     pub name: String,
 }
 
-#[derive(Queryable, Selectable, Identifiable, Debug, PartialEq)]
+#[derive(Queryable, Selectable, Identifiable, Debug, PartialEq, Clone)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Rom {
     pub id: i32,

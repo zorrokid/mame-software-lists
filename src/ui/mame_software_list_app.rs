@@ -1,13 +1,15 @@
 use crate::{
-    configuration::{emulators::{get_emulators_by_system_id, Emulator}, paths::Paths},
+    configuration::{
+        emulators::{get_emulators_by_system_id, Emulator},
+        paths::Paths,
+    },
     database::{
-        machines::db_get_machines_for_software_list,
-        software_lists::db_get_software_lists_for_system,
-        systems::db_get_systems,
-        roms::db_get_roms,
+        machines::db_get_machines_for_software_list, roms::db_get_roms,
+        software_lists::db_get_software_lists_for_system, systems::db_get_systems,
     },
     emulators::emulator_runner::run_with_emulator,
-    models::{Machine, SoftwareList, System, Rom}, software_lists::process::process_from_datafile,
+    models::{Machine, Rom, SoftwareList, System},
+    software_lists::process::process_from_datafile,
 };
 use diesel::SqliteConnection;
 use eframe::egui;
@@ -16,8 +18,8 @@ use std::{path::PathBuf, sync::mpsc, thread};
 
 use super::{
     emulators_combobox::show_emulators_combobox, machines_list::show_machines_list,
-    software_lists_combobox::show_software_lists_combobox, systems_combobox::show_systems_combobox,
-    roms_list::show_roms_list,
+    roms_list::show_roms_list, software_lists_combobox::show_software_lists_combobox,
+    systems_combobox::show_systems_combobox,
 };
 
 pub struct MameSoftwareListApp {
@@ -76,11 +78,7 @@ impl MameSoftwareListApp {
     }
 
     fn fetch_roms_for_machine(&mut self, machine_id: i32) {
-        let machine = self
-            .machines
-            .iter()
-            .find(|m| m.id == machine_id)
-            .unwrap();
+        let machine = self.machines.iter().find(|m| m.id == machine_id).unwrap();
         self.roms = db_get_roms(self.connection.as_mut(), machine).unwrap();
     }
 
@@ -88,17 +86,19 @@ impl MameSoftwareListApp {
         self.emulators = match get_emulators_by_system_id(system_name) {
             Ok(emulators) => emulators,
             Err(e) => {
-                self.error_messages.push(format!("Error getting emulators: {}", e));
+                self.error_messages
+                    .push(format!("Error getting emulators: {}", e));
                 Vec::new()
             }
         }
     }
 
-    fn fetch_systems(&mut self) {   
+    fn fetch_systems(&mut self) {
         self.systems = match db_get_systems(self.connection.as_mut()) {
             Ok(systems) => systems,
             Err(e) => {
-                self.error_messages.push(format!("Error getting systems: {}", e));
+                self.error_messages
+                    .push(format!("Error getting systems: {}", e));
                 Vec::new()
             }
         }
@@ -106,7 +106,6 @@ impl MameSoftwareListApp {
 
     fn start_button_clicked(&self) {
         if self.selected_machine_id != 0 && self.selected_emulator_id != "" {
-        
             // Clone the values to pass them to the thread closure
             let system_name = self
                 .systems
@@ -131,9 +130,18 @@ impl MameSoftwareListApp {
                 software_list_id: self.selected_software_list_id,
             };
             let emulator_id = self.selected_emulator_id.clone();
+            let rom = self
+                .roms
+                .iter()
+                .find(|r| r.id == self.selected_rom_id)
+                .cloned();
+            let rom_out = match rom {
+                Some(r) => Some(r.clone()),
+                None => None,
+            };
             // start run_with_emulator in a new thread
             let handle = thread::spawn(move || {
-                match run_with_emulator(&machine_clone, system_name, emulator_id) {
+                match run_with_emulator(&machine_clone, system_name, emulator_id, rom_out) {
                     Ok(_) => {
                         println!("Emulator started successfully");
                     }
@@ -152,10 +160,7 @@ impl MameSoftwareListApp {
         let (sender, receiver) = mpsc::channel();
 
         thread::spawn(move || {
-            if let Some(path) = FileDialog::new()
-                .set_directory(dat_file_folder)
-                .pick_file()
-            {
+            if let Some(path) = FileDialog::new().set_directory(dat_file_folder).pick_file() {
                 sender.send(Some(path)).unwrap();
             } else {
                 sender.send(None).unwrap();
@@ -163,7 +168,6 @@ impl MameSoftwareListApp {
         });
 
         self.file_dialog_receiver = Some(receiver);
-
     }
 
     fn check_file_dialog_receiver(&mut self) {
@@ -171,7 +175,10 @@ impl MameSoftwareListApp {
             if let Ok(path) = receiver.try_recv() {
                 if let Some(path) = path {
                     println!("Selected file: {:?} ... start processing", path);
-                    process_from_datafile(self.connection.as_mut(), path.to_string_lossy().into_owned());
+                    process_from_datafile(
+                        self.connection.as_mut(),
+                        path.to_string_lossy().into_owned(),
+                    );
                     println!("Processing finished");
                 }
                 self.file_dialog_receiver = None;
@@ -179,7 +186,6 @@ impl MameSoftwareListApp {
             }
         }
     }
-
 }
 
 impl eframe::App for MameSoftwareListApp {
@@ -194,7 +200,7 @@ impl eframe::App for MameSoftwareListApp {
                         std::process::exit(0);
                     }
                 });
-           })
+            })
         });
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Mame Software Lists");
@@ -245,7 +251,8 @@ impl eframe::App for MameSoftwareListApp {
                         &mut self.previous_selected_rom_id,
                         &mut new_selected_rom_id,
                     );
-                }).response
+                })
+                .response
             });
 
             if let Some(system_id) = new_selected_systemid {

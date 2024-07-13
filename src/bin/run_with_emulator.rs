@@ -28,7 +28,7 @@ fn main() {
     let (system_id, emulator_id, software_list_machine_id) = handle_args();
     let connection = &mut establish_connection();
     let machine = db_get_machine(connection, software_list_machine_id.clone()).unwrap();
-    match run_with_emulator(&machine, system_id, emulator_id) {
+    match run_with_emulator(&machine, system_id, emulator_id, None) {
         Ok(_) => println!("Emulator ran successfully"),
         Err(e) => println!("Error running emulator: {}", e),
     }

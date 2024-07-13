@@ -6,7 +6,32 @@
                 "id": "mednafen-sms",
                 "description": "Mednafen",
                 "executable": "mednafen",
-                "arguments": ["-force_module", "sms"]
+                "arguments": ["-force_module", "sms"],
+                "extract": true 
+            }
+        ]
+    },
+    {
+        "system": "a2600",
+        "emulators": [
+            {
+                "id": "stella",
+                "description": "Stella",
+                "executable": "stella",
+                "arguments": [],
+                "extract": false
+            }
+        ]
+    },
+    {
+        "system": "c64_flop_orig",
+        "emulators": [
+            {
+                "id": "vice",
+                "description": "VICE",
+                "executable": "x64",
+                "arguments": ["-autostart", "$PATH"],
+                "extract": true
             }
         ]
     }
