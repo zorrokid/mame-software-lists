@@ -103,37 +103,33 @@ impl MameSoftwareListApp {
         }
     }
 
+    fn get_selected_system(&self) -> Option<&System> {
+        self.systems
+            .iter()
+            .find(|s| s.id == self.selected_system_id)
+    }
+
+    fn get_selected_machine(&self) -> Option<&Machine> {
+        self.machines
+            .iter()
+            .find(|m| m.id == self.selected_machine_id)
+    }
+
+    fn get_selected_rom(&self) -> Option<&Rom> {
+        self.roms.iter().find(|r| r.id == self.selected_rom_id)
+    }
+
     fn start_button_clicked(&mut self) {
         if self.selected_machine_id != 0 && self.selected_emulator_id != "" {
             // Clone the values to pass them to the thread closure
-            let system_name = self
-                .systems
-                .iter()
-                .find(|s| s.id == self.selected_system_id)
-                .unwrap()
-                .name
-                .clone();
-            let machine = self
-                .machines
-                .iter()
-                .find(|m| m.id == self.selected_machine_id)
-                .unwrap();
-            let machine_clone = machine.clone();
+            let system_name = self.get_selected_system().unwrap().name.clone();
+            let machine = self.get_selected_machine().unwrap().clone();
             let emulator_id = self.selected_emulator_id.clone();
-            let rom = self
-                .roms
-                .iter()
-                .find(|r| r.id == self.selected_rom_id)
-                .cloned();
-            let rom_out = match rom {
-                Some(r) => Some(r.clone()),
-                None => None,
-            };
+            let rom = self.get_selected_rom().cloned().map(|r| r.clone());
 
             // start run_with_emulator in a new thread
-            let handle = thread::spawn(move || {
-                run_with_emulator(&machine_clone, system_name, emulator_id, rom_out)
-            });
+            let handle =
+                thread::spawn(move || run_with_emulator(&machine, system_name, emulator_id, rom));
 
             match handle.join() {
                 Ok(_) => {}
