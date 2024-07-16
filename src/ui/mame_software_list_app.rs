@@ -118,16 +118,7 @@ impl MameSoftwareListApp {
                 .iter()
                 .find(|m| m.id == self.selected_machine_id)
                 .unwrap();
-            // TODO: why is this now working?
-            //let machine_clone = machine.clone();
-            let machine_clone = Machine {
-                id: self.selected_machine_id,
-                name: machine.name.clone(),
-                description: machine.description.clone(),
-                year: machine.year.clone(),
-                publisher: machine.publisher.clone(),
-                software_list_id: self.selected_software_list_id,
-            };
+            let machine_clone = machine.clone();
             let emulator_id = self.selected_emulator_id.clone();
             let rom = self
                 .roms
