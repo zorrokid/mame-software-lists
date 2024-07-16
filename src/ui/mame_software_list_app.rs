@@ -103,7 +103,7 @@ impl MameSoftwareListApp {
         }
     }
 
-    fn start_button_clicked(&self) {
+    fn start_button_clicked(&mut self) {
         if self.selected_machine_id != 0 && self.selected_emulator_id != "" {
             // Clone the values to pass them to the thread closure
             let system_name = self
@@ -138,19 +138,19 @@ impl MameSoftwareListApp {
                 Some(r) => Some(r.clone()),
                 None => None,
             };
+
             // start run_with_emulator in a new thread
             let handle = thread::spawn(move || {
-                match run_with_emulator(&machine_clone, system_name, emulator_id, rom_out) {
-                    Ok(_) => {
-                        println!("Emulator started successfully");
-                    }
-                    Err(e) => {
-                        // TODO: show error in UI
-                        println!("Error starting emulator {}", e.message);
-                    }
-                }
+                run_with_emulator(&machine_clone, system_name, emulator_id, rom_out)
             });
-            handle.join().unwrap();
+
+            match handle.join() {
+                Ok(_) => {}
+                Err(e) => {
+                    self.error_messages
+                        .push(format!("Error starting emulator: {:?}", e));
+                }
+            }
         }
     }
 
