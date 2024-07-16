@@ -86,8 +86,7 @@ impl MameSoftwareListApp {
         self.emulators = match get_emulators_by_system_id(system_name) {
             Ok(emulators) => emulators,
             Err(e) => {
-                self.error_messages
-                    .push(format!("Error getting emulators: {}", e));
+                self.error_messages.push(e.message.clone());
                 Vec::new()
             }
         }
@@ -147,7 +146,7 @@ impl MameSoftwareListApp {
                     }
                     Err(e) => {
                         // TODO: show error in UI
-                        println!("Error starting emulator {}", e);
+                        println!("Error starting emulator {}", e.message);
                     }
                 }
             });

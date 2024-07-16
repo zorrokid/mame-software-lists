@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::process::Command;
 
 use crate::archives::zip_util::extract_zip_file_to_tmp;
@@ -6,13 +5,20 @@ use crate::configuration::emulators::get_emulators_by_system_id;
 use crate::configuration::paths::read_paths;
 use crate::models::{Machine, Rom};
 
+pub struct EmulatorRunnerError {
+    pub message: String,
+}
+
 pub fn run_with_emulator(
     machine: &Machine,
     system_id: String,
     emulator_id: String,
     rom: Option<Rom>,
-) -> Result<(), Box<dyn Error>> {
-    let emulators_for_system = get_emulators_by_system_id(system_id.clone())?;
+) -> Result<(), EmulatorRunnerError> {
+    let emulators_for_system =
+        get_emulators_by_system_id(system_id.clone()).map_err(|_| EmulatorRunnerError {
+            message: format!("No emulators found for system {}", system_id),
+        })?;
     let emulator = emulators_for_system
         .iter()
         .find(|e| e.id == emulator_id)
@@ -25,7 +31,10 @@ pub fn run_with_emulator(
 
     if emulator.extract {
         let temp_dir = std::env::temp_dir();
-        let file_names = extract_zip_file_to_tmp(&file_path, &temp_dir)?;
+        let file_names =
+            extract_zip_file_to_tmp(&file_path, &temp_dir).map_err(|e| EmulatorRunnerError {
+                message: format!("Error extracting zip file: {}", e.message),
+            })?;
         run_path = if rom.is_some() {
             let rom_name = rom.unwrap().name.clone();
             let normalized_rom_name = normalize_name(&rom_name);
@@ -40,17 +49,13 @@ pub fn run_with_emulator(
     }
 
     let run_arguments = generate_arguments(emulator.arguments.clone(), run_path.clone());
-    let output = Command::new(emulator.executable.clone())
+    Command::new(emulator.executable.clone())
         .args(run_arguments.clone())
-        .spawn();
-
-    match output {
-        Ok(_) => return Ok(()),
-        Err(e) => {
-            println!("Error running emulator: {}", e);
-            return Err(e.into());
-        }
-    }
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| EmulatorRunnerError {
+            message: format!("Error running emulator: {}", e.to_string()),
+        })
 }
 
 fn normalize_name(name: &String) -> String {
@@ -67,15 +72,17 @@ pub fn get_machine_file_path(
     machine: &crate::models::Machine,
     system_id: &String,
     roms_path: &String,
-) -> Result<String, Box<dyn Error>> {
+) -> Result<String, EmulatorRunnerError> {
     let filename = get_machine_file_name(machine);
     let path = format!("{}/{}/{}", roms_path, system_id, filename);
 
     if std::path::Path::new(&path).exists() {
         return Ok(path.clone());
     }
-    let error_msg = format!("Machine file not found in path {}", path);
-    return Err(error_msg.into());
+
+    Err(EmulatorRunnerError {
+        message: format!("Machine file not found in path {}", path),
+    })
 }
 
 fn generate_arguments(arguments: Vec<String>, file_path: String) -> Vec<String> {

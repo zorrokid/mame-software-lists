@@ -1,5 +1,3 @@
-use std::error::Error;
-
 pub const EMULATORS_CONFIG_PATH: &str = "configs/emulators.json";
 
 #[derive(serde::Deserialize, Debug, Clone)]
@@ -17,14 +15,20 @@ pub struct EmulatorsBySystem {
     pub emulators: Vec<Emulator>,
 }
 
-pub fn get_emulators_by_system_id(system_id: String) -> Result<Vec<Emulator>, Box<dyn Error>> {
+pub struct EmulatorError {
+    pub message: String,
+}
+
+pub fn get_emulators_by_system_id(system_id: String) -> Result<Vec<Emulator>, EmulatorError> {
     let all_emulators = read_emulators(EMULATORS_CONFIG_PATH.to_string());
-    let emulators_filtered_by_system = all_emulators.iter().find(|e| e.system == system_id);
-    if emulators_filtered_by_system.is_none() {
-        return Err("No emulators found for system".into());
-    }
-    let result = emulators_filtered_by_system.unwrap().emulators.clone();
-    Ok(result)
+
+    all_emulators
+        .iter()
+        .find(|e| e.system == system_id)
+        .ok_or_else(|| EmulatorError {
+            message: format!("No emulators found for system {}", system_id),
+        })
+        .map(|e| e.emulators.clone())
 }
 
 pub fn read_emulators(path: String) -> Vec<EmulatorsBySystem> {
