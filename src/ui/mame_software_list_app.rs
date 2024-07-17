@@ -18,8 +18,8 @@ use std::{path::PathBuf, sync::mpsc, thread};
 
 use super::{
     emulators_combobox::show_emulators_combobox, machines_list::show_machines_list,
-    roms_list::show_roms_list, software_lists_combobox::show_software_lists_combobox,
-    systems_combobox::show_systems_combobox,
+    roms_list::show_roms_list, scan_files_dialog::show_scan_files_dialog,
+    software_lists_combobox::show_software_lists_combobox, systems_combobox::show_systems_combobox,
 };
 
 pub struct MameSoftwareListApp {
@@ -41,6 +41,7 @@ pub struct MameSoftwareListApp {
     roms: Vec<Rom>,
     selected_rom_id: i32,
     previous_selected_rom_id: i32,
+    show_scan_files_dialog: bool,
 }
 
 impl MameSoftwareListApp {
@@ -64,6 +65,7 @@ impl MameSoftwareListApp {
             roms: Vec::new(),
             selected_rom_id: 0,
             previous_selected_rom_id: 0,
+            show_scan_files_dialog: false,
         }
     }
 
@@ -156,6 +158,14 @@ impl MameSoftwareListApp {
         self.file_dialog_receiver = Some(receiver);
     }
 
+    fn scan_available_files(&mut self) {
+        self.show_scan_files_dialog = true;
+    }
+
+    fn close_available_files_dialog(&mut self) {
+        self.show_scan_files_dialog = false;
+    }
+
     fn check_file_dialog_receiver(&mut self) {
         if let Some(receiver) = &self.file_dialog_receiver {
             if let Ok(path) = receiver.try_recv() {
@@ -181,6 +191,12 @@ impl eframe::App for MameSoftwareListApp {
                 ui.menu_button("File", |ui| {
                     if ui.button("Add Software Lists data file").clicked() {
                         self.add_software_list_data_file();
+                    }
+                    if ui
+                        .button("Scan available files for a software list")
+                        .clicked()
+                    {
+                        self.scan_available_files();
                     }
                     if ui.button("Quit").clicked() {
                         std::process::exit(0);
@@ -266,6 +282,10 @@ impl eframe::App for MameSoftwareListApp {
 
             if let Some(rom_id) = new_selected_rom_id {
                 self.previous_selected_rom_id = rom_id;
+            }
+
+            if self.show_scan_files_dialog {
+                show_scan_files_dialog(ctx, || self.close_available_files_dialog());
             }
 
             self.check_file_dialog_receiver();
