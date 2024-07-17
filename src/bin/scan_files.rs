@@ -33,6 +33,7 @@ fn main() {
         }
     };
 
-    let matched_ids = scan_archives(path, roms_in_software_list);
-    set_matched_roms(connection, &matched_ids);
+    if let Ok(scan_result) = scan_archives(path, roms_in_software_list) {
+        set_matched_roms(connection, &scan_result.matched_rom_ids);
+    }
 }

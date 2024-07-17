@@ -4,11 +4,23 @@ use std::io::Read;
 
 use crate::models;
 
+pub struct ScanArchivesError {
+    pub message: String,
+}
+
+pub struct ScanResult {
+    pub matched_rom_ids: Vec<i32>,
+    pub failed_files: Vec<String>,
+}
+
 pub fn scan_archives(
     path: String,
     roms_in_software_list: HashMap<String, models::Rom>,
-) -> Vec<i32> {
-    let mut matched_ids: Vec<i32> = Vec::new();
+) -> Result<ScanResult, ScanArchivesError> {
+    let mut scan_results = ScanResult {
+        matched_rom_ids: Vec::new(),
+        failed_files: Vec::new(),
+    };
     // read the files in the directory
     let dir_entries = std::fs::read_dir(path).unwrap();
     for dir_entry in dir_entries {
@@ -19,14 +31,15 @@ pub fn scan_archives(
             let mut archive = match zip::ZipArchive::new(std::fs::File::open(&path_buf).unwrap()) {
                 Ok(archive) => archive,
                 Err(_) => {
-                    // TODO: collect erroneous files and return their file names as list
-                    println!("Error opening archive: {}", path_str);
+                    scan_results.failed_files.push(path_str.to_string());
                     continue;
                 }
             };
             // read the files in the archive
             for i in 0..archive.len() {
-                let mut file = archive.by_index(i).unwrap();
+                let mut file = archive.by_index(i).map_err(|_| ScanArchivesError {
+                    message: format!("Error reading file {} from archive", i),
+                })?;
                 let file_name = file.name();
                 print!("{} ", file_name);
 
@@ -37,8 +50,9 @@ pub fn scan_archives(
                 // initialize it with zeros
                 let mut buffer = [0; 1024];
                 loop {
-                    // TODO: handle errors
-                    let bytes_read = file.read(&mut buffer).unwrap();
+                    let bytes_read = file.read(&mut buffer).map_err(|_| ScanArchivesError {
+                        message: "Error reading file".to_string(),
+                    })?;
                     // is the end of the file reached?
                     if bytes_read == 0 {
                         break;
@@ -50,10 +64,12 @@ pub fn scan_archives(
                 let sha_1_str = format!("{:x}", sha_1);
                 println!("{:x}", sha_1);
                 if roms_in_software_list.contains_key(&sha_1_str) {
-                    matched_ids.push(roms_in_software_list.get(&sha_1_str).unwrap().id);
+                    scan_results
+                        .matched_rom_ids
+                        .push(roms_in_software_list.get(&sha_1_str).unwrap().id);
                 }
             }
         }
     }
-    matched_ids
+    Ok(scan_results)
 }
