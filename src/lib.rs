@@ -1,5 +1,6 @@
 pub mod archives;
 pub mod configuration;
+pub mod data_access;
 pub mod database;
 pub mod emulators;
 pub mod files;

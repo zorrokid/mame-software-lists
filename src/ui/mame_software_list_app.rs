@@ -3,15 +3,11 @@ use crate::{
         emulators::{get_emulators_by_system_id, Emulator},
         paths::Paths,
     },
-    database::{
-        machines::db_get_machines_for_software_list, roms::db_get_roms,
-        software_lists::db_get_software_lists_for_system, systems::db_get_systems,
-    },
+    data_access::data_access_provider::{DataAccessProvider, DataAccessTrait},
     emulators::emulator_runner::run_with_emulator,
     models::{Machine, Rom, SoftwareList, System},
     software_lists::process::process_from_datafile,
 };
-use diesel::SqliteConnection;
 use eframe::egui;
 use rfd::FileDialog;
 use std::{path::PathBuf, sync::mpsc, thread};
@@ -31,7 +27,6 @@ pub struct MameSoftwareListApp {
     selected_machine_id: i32,
     previous_selected_machine_id: i32,
     machines: Vec<Machine>,
-    connection: Box<SqliteConnection>,
     software_lists: Vec<SoftwareList>,
     emulators: Vec<Emulator>,
     selected_emulator_id: String,
@@ -42,10 +37,17 @@ pub struct MameSoftwareListApp {
     selected_rom_id: i32,
     previous_selected_rom_id: i32,
     show_scan_files_dialog: bool,
+    data_access: DataAccessProvider,
 }
 
-impl MameSoftwareListApp {
-    pub fn new(connection: Box<SqliteConnection>, systems: Vec<System>, paths: Paths) -> Self {
+impl<'a> MameSoftwareListApp {
+    pub fn new(paths: Paths) -> Self {
+        let mut data_access = DataAccessProvider::new();
+        let systems = data_access
+            .get_systems()
+            .map_err(|e| println!("Failed getting systems: {}", e.message))
+            .unwrap();
+
         Self {
             systems,
             selected_system_id: 0,
@@ -56,7 +58,6 @@ impl MameSoftwareListApp {
             previous_selected_machine_id: 0,
             machines: Vec::new(),
             software_lists: Vec::new(),
-            connection,
             emulators: Vec::new(),
             selected_emulator_id: String::new(),
             paths,
@@ -66,22 +67,39 @@ impl MameSoftwareListApp {
             selected_rom_id: 0,
             previous_selected_rom_id: 0,
             show_scan_files_dialog: false,
+            data_access,
         }
     }
 
     fn fetch_software_lists_for_system(&mut self, system_id: i32) {
-        self.software_lists =
-            db_get_software_lists_for_system(self.connection.as_mut(), system_id).unwrap();
+        self.software_lists = match self.data_access.get_software_lists_for_system(system_id) {
+            Ok(s_lists) => s_lists,
+            Err(e) => {
+                self.error_messages.push(e.message);
+                Vec::new()
+            }
+        }
     }
 
     fn fetch_machines_for_software_list(&mut self, s_list_id: i32) {
-        self.machines =
-            db_get_machines_for_software_list(self.connection.as_mut(), s_list_id).unwrap();
+        self.machines = match self.data_access.get_machines_for_software_list(s_list_id) {
+            Ok(machines) => machines,
+            Err(e) => {
+                self.error_messages.push(e.message);
+                Vec::new()
+            }
+        }
     }
 
     fn fetch_roms_for_machine(&mut self, machine_id: i32) {
         let machine = self.machines.iter().find(|m| m.id == machine_id).unwrap();
-        self.roms = db_get_roms(self.connection.as_mut(), machine).unwrap();
+        self.roms = match self.data_access.get_roms_for_machine(machine) {
+            Ok(roms) => roms,
+            Err(e) => {
+                self.error_messages.push(e.message);
+                Vec::new()
+            }
+        }
     }
 
     fn fetch_emulators_for_system(&mut self, system_name: String) {
@@ -95,11 +113,10 @@ impl MameSoftwareListApp {
     }
 
     fn fetch_systems(&mut self) {
-        self.systems = match db_get_systems(self.connection.as_mut()) {
+        self.systems = match self.data_access.get_systems() {
             Ok(systems) => systems,
             Err(e) => {
-                self.error_messages
-                    .push(format!("Error getting systems: {}", e));
+                self.error_messages.push(e.message);
                 Vec::new()
             }
         }
@@ -171,14 +188,31 @@ impl MameSoftwareListApp {
             if let Ok(path) = receiver.try_recv() {
                 if let Some(path) = path {
                     println!("Selected file: {:?} ... start processing", path);
-                    process_from_datafile(
-                        self.connection.as_mut(),
+                    match process_from_datafile(
+                        &mut self.data_access,
                         path.to_string_lossy().into_owned(),
-                    );
-                    println!("Processing finished");
+                    ) {
+                        Ok(_) => {
+                            println!("Software list processed");
+                        }
+                        Err(e) => {
+                            self.error_messages
+                                .push(format!("Error processing software list: {}", e.message));
+                        }
+                    }
                 }
                 self.file_dialog_receiver = None;
                 self.fetch_systems();
+            }
+        }
+    }
+
+    fn get_all_software_lists(&mut self) -> Vec<SoftwareList> {
+        match self.data_access.get_software_lists() {
+            Ok(s_lists) => s_lists,
+            Err(e) => {
+                self.error_messages.push(e.message);
+                Vec::new()
             }
         }
     }
@@ -285,7 +319,12 @@ impl eframe::App for MameSoftwareListApp {
             }
 
             if self.show_scan_files_dialog {
-                show_scan_files_dialog(ctx, || self.close_available_files_dialog());
+                let software_lists = self.get_all_software_lists();
+                show_scan_files_dialog(
+                    ctx,
+                    || self.close_available_files_dialog(),
+                    &software_lists,
+                );
             }
 
             self.check_file_dialog_receiver();

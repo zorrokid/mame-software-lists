@@ -1,6 +1,7 @@
 use sha1::{Digest, Sha1};
 use std::collections::HashMap;
 use std::io::Read;
+use std::path::PathBuf;
 
 use crate::models;
 
@@ -14,7 +15,7 @@ pub struct ScanResult {
 }
 
 pub fn scan_archives(
-    path: String,
+    path: PathBuf,
     roms_in_software_list: HashMap<String, models::Rom>,
 ) -> Result<ScanResult, ScanArchivesError> {
     let mut scan_results = ScanResult {

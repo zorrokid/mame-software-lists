@@ -2,6 +2,7 @@ use mame_software_lists::database::establish_connection;
 use mame_software_lists::database::roms::set_matched_roms;
 use mame_software_lists::files::scan_archives::scan_archives;
 use mame_software_lists::software_lists::fetch_software_list::fetch_software_list_roms;
+use std::path::PathBuf;
 
 fn handle_args() -> (i32, String) {
     let args: Vec<String> = std::env::args().collect();
@@ -33,7 +34,11 @@ fn main() {
         }
     };
 
+    let path = PathBuf::from(path);
     if let Ok(scan_result) = scan_archives(path, roms_in_software_list) {
-        set_matched_roms(connection, &scan_result.matched_rom_ids);
+        let _res = set_matched_roms(connection, &scan_result.matched_rom_ids).map_err(|e| {
+            println!("Error setting matched roms: {}", e);
+            std::process::exit(1);
+        });
     }
 }
