@@ -3,33 +3,26 @@ use eframe::egui;
 use crate::models::SoftwareList;
 
 pub struct ScanFilesDialog<'a> {
-    close_dialog: &'a mut dyn FnMut(),
-    ctx: &'a egui::Context,
+    close_dialog: &'a mut dyn FnMut(Option<i32>),
     software_lists: &'a Vec<SoftwareList>,
     selected_software_list_id: i32,
 }
 
 impl<'a> ScanFilesDialog<'a> {
     pub fn new(
-        close_dialog: &'a mut dyn FnMut(),
-        ctx: &'a egui::Context,
+        close_dialog: &'a mut dyn FnMut(Option<i32>),
         software_lists: &'a Vec<SoftwareList>,
+        selected_software_list_id: i32,
     ) -> Self {
         Self {
             close_dialog,
-            ctx,
             software_lists,
-            selected_software_list_id: 0,
+            selected_software_list_id,
         }
     }
 
-    fn scan_files_for_software_list(&self, software_list_id: i32) {
-        println!("scan_files_for_software_list");
-        // TODO
-    }
-
-    pub fn show(&mut self) {
-        egui::Window::new("Scan Files").show(self.ctx, |ui| {
+    pub fn show(&mut self, ctx: &egui::Context) {
+        egui::Window::new("Scan Files").show(ctx, |ui| {
             egui::Grid::new("software_lists").show(ui, |ui| {
                 ui.label("Software List");
                 ui.end_row();
@@ -43,21 +36,15 @@ impl<'a> ScanFilesDialog<'a> {
                         )
                         .clicked()
                     {
-                        self.scan_files_for_software_list(software_list.id);
+                        (self.close_dialog)(Some(software_list.id));
                     }
                     ui.end_row();
                 }
             });
-            ui.label("Scan Files");
-            if ui.button("Scan").clicked() {
-                println!("Scan button clicked");
-            }
             if ui.button("Cancel").clicked() {
-                println!("Cancel button clicked");
-                (self.close_dialog)();
+                (self.close_dialog)(None);
             }
         });
-        println!("show_scan_files_dialog");
     }
 }
 
@@ -65,8 +52,9 @@ pub fn show_scan_files_dialog<F>(
     ctx: &egui::Context,
     mut close_dialog: F,
     software_lists: &Vec<SoftwareList>,
+    selected_software_list_id: i32,
 ) where
-    F: FnMut() -> (),
+    F: FnMut(Option<i32>) -> (),
 {
-    ScanFilesDialog::new(&mut close_dialog, ctx, software_lists).show();
+    ScanFilesDialog::new(&mut close_dialog, software_lists, selected_software_list_id).show(ctx);
 }

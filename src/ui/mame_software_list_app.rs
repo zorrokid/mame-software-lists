@@ -27,7 +27,7 @@ pub struct MameSoftwareListApp {
     selected_machine_id: i32,
     previous_selected_machine_id: i32,
     machines: Vec<Machine>,
-    software_lists: Vec<SoftwareList>,
+    software_lists_for_selected_system: Vec<SoftwareList>,
     emulators: Vec<Emulator>,
     selected_emulator_id: String,
     paths: Paths,
@@ -38,9 +38,11 @@ pub struct MameSoftwareListApp {
     previous_selected_rom_id: i32,
     show_scan_files_dialog: bool,
     data_access: DataAccessProvider,
+    scan_software_list_id: i32,
+    software_lists: Vec<SoftwareList>,
 }
 
-impl<'a> MameSoftwareListApp {
+impl MameSoftwareListApp {
     pub fn new(paths: Paths) -> Self {
         let mut data_access = DataAccessProvider::new();
         let systems = data_access
@@ -48,8 +50,14 @@ impl<'a> MameSoftwareListApp {
             .map_err(|e| println!("Failed getting systems: {}", e.message))
             .unwrap();
 
+        let software_lists = data_access
+            .get_software_lists()
+            .map_err(|e| println!("Failed getting software lists: {}", e.message))
+            .unwrap();
+
         Self {
             systems,
+            // TODO: maybe use Option instead?
             selected_system_id: 0,
             previous_selected_system_id: 0,
             selected_software_list_id: 0,
@@ -57,7 +65,7 @@ impl<'a> MameSoftwareListApp {
             selected_machine_id: 0,
             previous_selected_machine_id: 0,
             machines: Vec::new(),
-            software_lists: Vec::new(),
+            software_lists_for_selected_system: Vec::new(),
             emulators: Vec::new(),
             selected_emulator_id: String::new(),
             paths,
@@ -68,17 +76,20 @@ impl<'a> MameSoftwareListApp {
             previous_selected_rom_id: 0,
             show_scan_files_dialog: false,
             data_access,
+            scan_software_list_id: 0,
+            software_lists,
         }
     }
 
     fn fetch_software_lists_for_system(&mut self, system_id: i32) {
-        self.software_lists = match self.data_access.get_software_lists_for_system(system_id) {
-            Ok(s_lists) => s_lists,
-            Err(e) => {
-                self.error_messages.push(e.message);
-                Vec::new()
+        self.software_lists_for_selected_system =
+            match self.data_access.get_software_lists_for_system(system_id) {
+                Ok(s_lists) => s_lists,
+                Err(e) => {
+                    self.error_messages.push(e.message);
+                    Vec::new()
+                }
             }
-        }
     }
 
     fn fetch_machines_for_software_list(&mut self, s_list_id: i32) {
@@ -179,8 +190,11 @@ impl<'a> MameSoftwareListApp {
         self.show_scan_files_dialog = true;
     }
 
-    fn close_available_files_dialog(&mut self) {
+    fn close_available_files_dialog(&mut self, s_list_id: Option<i32>) {
         self.show_scan_files_dialog = false;
+        if let Some(id) = s_list_id {
+            self.scan_software_list_id = id;
+        }
     }
 
     fn check_file_dialog_receiver(&mut self) {
@@ -258,7 +272,7 @@ impl eframe::App for MameSoftwareListApp {
 
                 show_software_lists_combobox(
                     ui,
-                    &self.software_lists,
+                    &self.software_lists_for_selected_system,
                     &mut self.selected_software_list_id,
                     &mut self.previous_selected_software_list_id,
                     &mut new_selected_software_list_id,
@@ -319,11 +333,13 @@ impl eframe::App for MameSoftwareListApp {
             }
 
             if self.show_scan_files_dialog {
-                let software_lists = self.get_all_software_lists();
+                let cloned_software_lists = self.software_lists.clone();
+                let selected_software_list_id = self.scan_software_list_id;
                 show_scan_files_dialog(
                     ctx,
-                    || self.close_available_files_dialog(),
-                    &software_lists,
+                    |id: Option<i32>| self.close_available_files_dialog(id),
+                    &cloned_software_lists,
+                    selected_software_list_id,
                 );
             }
 

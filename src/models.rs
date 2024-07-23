@@ -1,7 +1,7 @@
 use crate::schema::{machines, machines_roms, roms, software_lists, systems};
 use diesel::prelude::*;
 
-#[derive(Queryable, Selectable, Identifiable, Debug, PartialEq)]
+#[derive(Queryable, Selectable, Identifiable, Debug, PartialEq, Clone)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct SoftwareList {
     pub id: i32,
