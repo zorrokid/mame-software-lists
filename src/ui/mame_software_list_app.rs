@@ -7,6 +7,7 @@ use crate::{
     emulators::emulator_runner::run_with_emulator,
     models::{Machine, Rom, SoftwareList, System},
     software_lists::process::process_from_datafile,
+    software_lists::software_list_file_scanner::SoftwareListFileScanner,
 };
 use eframe::egui;
 use rfd::FileDialog;
@@ -151,13 +152,11 @@ impl MameSoftwareListApp {
 
     fn start_button_clicked(&mut self) {
         if self.selected_machine_id != 0 && self.selected_emulator_id != "" {
-            // Clone the values to pass them to the thread closure
             let system_name = self.get_selected_system().unwrap().name.clone();
             let machine = self.get_selected_machine().unwrap().clone();
             let emulator_id = self.selected_emulator_id.clone();
             let rom = self.get_selected_rom().cloned().map(|r| r.clone());
 
-            // start run_with_emulator in a new thread
             let handle =
                 thread::spawn(move || run_with_emulator(&machine, system_name, emulator_id, rom));
 
@@ -194,6 +193,20 @@ impl MameSoftwareListApp {
         self.show_scan_files_dialog = false;
         if let Some(id) = s_list_id {
             self.scan_software_list_id = id;
+            // TODO: this has to be done in a separate thread
+            let mut scanner = SoftwareListFileScanner::new(&mut self.data_access);
+            let selected_software_list = self
+                .software_lists
+                .iter()
+                .find(|s| s.id == id)
+                .unwrap()
+                .clone();
+            scanner
+                .scan_files_for_software_list(&selected_software_list)
+                .map_err(|e| {
+                    self.error_messages.push(e.message);
+                })
+                .ok();
         }
     }
 
@@ -217,16 +230,6 @@ impl MameSoftwareListApp {
                 }
                 self.file_dialog_receiver = None;
                 self.fetch_systems();
-            }
-        }
-    }
-
-    fn get_all_software_lists(&mut self) -> Vec<SoftwareList> {
-        match self.data_access.get_software_lists() {
-            Ok(s_lists) => s_lists,
-            Err(e) => {
-                self.error_messages.push(e.message);
-                Vec::new()
             }
         }
     }
