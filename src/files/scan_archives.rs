@@ -1,25 +1,19 @@
 use sha1::{Digest, Sha1};
-use std::collections::HashMap;
 use std::io::Read;
 use std::path::PathBuf;
-
-use crate::models;
 
 pub struct ScanArchivesError {
     pub message: String,
 }
 
 pub struct ScanResult {
-    pub matched_rom_ids: Vec<i32>,
+    pub found_checksums: Vec<String>,
     pub failed_files: Vec<String>,
 }
 
-pub fn scan_archives(
-    path: PathBuf,
-    roms_in_software_list: HashMap<String, models::Rom>,
-) -> Result<ScanResult, ScanArchivesError> {
+pub fn scan_archives(path: PathBuf) -> Result<ScanResult, ScanArchivesError> {
     let mut scan_results = ScanResult {
-        matched_rom_ids: Vec::new(),
+        found_checksums: Vec::new(),
         failed_files: Vec::new(),
     };
     // read the files in the directory
@@ -63,12 +57,7 @@ pub fn scan_archives(
                 }
                 let sha_1 = hasher.finalize();
                 let sha_1_str = format!("{:x}", sha_1);
-                println!("{:x}", sha_1);
-                if roms_in_software_list.contains_key(&sha_1_str) {
-                    scan_results
-                        .matched_rom_ids
-                        .push(roms_in_software_list.get(&sha_1_str).unwrap().id);
-                }
+                scan_results.found_checksums.push(sha_1_str);
             }
         }
     }

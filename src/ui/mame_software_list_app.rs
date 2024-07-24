@@ -41,6 +41,8 @@ pub struct MameSoftwareListApp {
     data_access: DataAccessProvider,
     scan_software_list_id: i32,
     software_lists: Vec<SoftwareList>,
+    // TODO: add scanner receiver to show result of scan operation
+    //software_list_file_scanner_receiver: Option<mpsc::Receiver<Option<i32>>>,
 }
 
 impl MameSoftwareListApp {
@@ -194,7 +196,9 @@ impl MameSoftwareListApp {
         if let Some(id) = s_list_id {
             self.scan_software_list_id = id;
             // TODO: this has to be done in a separate thread
-            let mut scanner = SoftwareListFileScanner::new(&mut self.data_access);
+
+            let rom_path: PathBuf = PathBuf::from(self.paths.software_lists_roms_folder.clone());
+            let mut scanner = SoftwareListFileScanner::new(&mut self.data_access, &rom_path);
             let selected_software_list = self
                 .software_lists
                 .iter()
@@ -202,7 +206,7 @@ impl MameSoftwareListApp {
                 .unwrap()
                 .clone();
             scanner
-                .scan_files_for_software_list(&selected_software_list)
+                .scan_files(&selected_software_list)
                 .map_err(|e| {
                     self.error_messages.push(e.message);
                 })

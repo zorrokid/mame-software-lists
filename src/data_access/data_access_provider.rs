@@ -12,9 +12,14 @@ pub struct DataAccessError {
 pub trait DataAccessTrait {
     fn fetch_software_list_roms(
         &mut self,
-        id: i32,
+        software_list: &SoftwareList,
     ) -> Result<HashMap<String, Rom>, DataAccessError>;
     fn set_matched_roms(&mut self, matched_rom_ids: &Vec<i32>) -> Result<(), DataAccessError>;
+    fn set_matched_roms_2(
+        &mut self,
+        software_list: &SoftwareList,
+        checksums: &Vec<String>,
+    ) -> Result<(), DataAccessError>;
     fn get_software_lists_for_system(
         &mut self,
         system_id: i32,
@@ -49,13 +54,8 @@ impl<'a> DataAccessProvider {
 impl<'a> DataAccessTrait for DataAccessProvider {
     fn fetch_software_list_roms(
         &mut self,
-        id: i32,
+        software_list: &SoftwareList,
     ) -> Result<HashMap<String, Rom>, DataAccessError> {
-        let software_list =
-            crate::database::software_lists::db_get_software_list(&mut self.connection, id)
-                .map_err(|e| DataAccessError {
-                    message: format!("Error fetching software list: {}", e),
-                })?;
         let machines =
             crate::database::machines::db_get_machines(&mut self.connection, &software_list)
                 .map_err(|e| DataAccessError {
@@ -83,6 +83,32 @@ impl<'a> DataAccessTrait for DataAccessProvider {
                 message: format!("Error setting matched roms: {}", e),
             },
         )?;
+        Ok(())
+    }
+
+    fn set_matched_roms_2(
+        &mut self,
+        software_list: &SoftwareList,
+        checksums: &Vec<String>,
+    ) -> Result<(), DataAccessError> {
+        let software_list_roms =
+            self.fetch_software_list_roms(software_list)
+                .map_err(|e| DataAccessError {
+                    message: format!("Error fetching software list roms: {}", e.message),
+                })?;
+
+        let matched_rom_ids = software_list_roms
+            .iter()
+            .filter(|(sha1, _)| checksums.contains(sha1))
+            .map(|(_, rom)| rom.id)
+            .collect();
+
+        crate::database::roms::set_matched_roms(&mut self.connection, &matched_rom_ids).map_err(
+            |e| DataAccessError {
+                message: format!("Error setting matched roms: {}", e),
+            },
+        )?;
+
         Ok(())
     }
 

@@ -32,6 +32,7 @@ pub struct Rom {
     pub size: i32,
     pub crc: String,
     pub sha1: String,
+    // TODO: should be Option
     pub have: bool,
 }
 

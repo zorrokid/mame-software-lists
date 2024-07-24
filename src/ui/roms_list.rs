@@ -32,6 +32,7 @@ impl<'a> RomsList<'a> {
             .show(self.ui, |ui| {
                 egui::Grid::new("roms_table").show(ui, |ui| {
                     ui.label("Name");
+                    ui.label("Available");
                     ui.end_row();
 
                     for rom in self.roms.iter() {
@@ -43,14 +44,15 @@ impl<'a> RomsList<'a> {
                             )
                             .clicked()
                         {
-                            if *self.selected_rom_id != *self.previous_selected_rom_id{
+                            if *self.selected_rom_id != *self.previous_selected_rom_id {
                                 *self.new_selected_rom_id = Some(self.selected_rom_id.clone());
                             }
                         }
+                        ui.label(if rom.have { "Yes" } else { "No" });
                         ui.end_row();
                     }
                 });
-        });
+            });
     }
 }
 
