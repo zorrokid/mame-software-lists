@@ -14,8 +14,7 @@ pub trait DataAccessTrait {
         &mut self,
         software_list: &SoftwareList,
     ) -> Result<HashMap<String, Rom>, DataAccessError>;
-    fn set_matched_roms(&mut self, matched_rom_ids: &Vec<i32>) -> Result<(), DataAccessError>;
-    fn set_matched_roms_2(
+    fn set_matched_roms(
         &mut self,
         software_list: &SoftwareList,
         checksums: &Vec<String>,
@@ -77,16 +76,7 @@ impl<'a> DataAccessTrait for DataAccessProvider {
         Ok(roms)
     }
 
-    fn set_matched_roms(&mut self, matched_rom_ids: &Vec<i32>) -> Result<(), DataAccessError> {
-        crate::database::roms::set_matched_roms(&mut self.connection, matched_rom_ids).map_err(
-            |e| DataAccessError {
-                message: format!("Error setting matched roms: {}", e),
-            },
-        )?;
-        Ok(())
-    }
-
-    fn set_matched_roms_2(
+    fn set_matched_roms(
         &mut self,
         software_list: &SoftwareList,
         checksums: &Vec<String>,

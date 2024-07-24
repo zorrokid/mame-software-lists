@@ -38,7 +38,7 @@ impl<'a> SoftwareListFileScanner<'a> {
             message: format!("Error scanning archives: {}", e.message),
         })?;
         self.data_access
-            .set_matched_roms_2(&software_list, &result.found_checksums)
+            .set_matched_roms(&software_list, &result.found_checksums)
             .map_err(|e| SoftwareListScannerError {
                 message: format!("Error setting matched roms: {}", e.message),
             })?;
