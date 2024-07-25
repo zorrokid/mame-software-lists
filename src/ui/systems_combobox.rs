@@ -1,5 +1,11 @@
-use super::mame_software_list_app::SystemSelectionOptions;
+use crate::models::System;
 use eframe::egui;
+
+#[derive(Clone)]
+pub struct SystemSelectionOptions {
+    pub selected_system_id: i32,
+    pub systems: Vec<System>,
+}
 
 pub struct SystemsComboBox<'a> {
     ui: &'a mut egui::Ui,

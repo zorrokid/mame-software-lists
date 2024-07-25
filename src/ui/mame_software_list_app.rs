@@ -5,7 +5,7 @@ use crate::{
     },
     data_access::data_access_provider::{DataAccessProvider, DataAccessTrait},
     emulators::emulator_runner::run_with_emulator,
-    models::{Machine, SoftwareList, System},
+    models::{Machine, System},
     software_lists::{
         process::process_from_datafile,
         software_list_file_scanner::{
@@ -18,37 +18,17 @@ use rfd::FileDialog;
 use std::{path::PathBuf, sync::mpsc, thread};
 
 use super::{
-    emulators_combobox::show_emulators_combobox,
-    machines_list::show_machines_list,
+    emulators_combobox::{show_emulators_combobox, EmulatorSelectionOptions},
+    machines_list::{show_machines_list, MachineSelectionOptions},
     message_dialog::{show_message_dialog, MessageDialogOptions},
     rom_selection_options::RomSelectionOptions,
     roms_list::show_roms_list,
     scan_files_dialog::{show_scan_files_dialog, ScanFilesDialogOptions},
-    software_lists_combobox::show_software_lists_combobox,
-    systems_combobox::show_systems_combobox,
+    software_lists_combobox::{show_software_lists_combobox, SoftwareListSelectionOptions},
+    systems_combobox::{show_systems_combobox, SystemSelectionOptions},
 };
 
-#[derive(Clone)]
-pub struct SystemSelectionOptions {
-    pub selected_system_id: i32,
-    pub systems: Vec<System>,
-}
-
-#[derive(Clone)]
-pub struct SoftwareListSelectionOptions {
-    pub selected_software_list_id: i32,
-    pub software_lists: Vec<SoftwareList>,
-}
-
-#[derive(Clone)]
-pub struct MachineSelectionOptions {
-    pub selected_machine_id: i32,
-    pub machines: Vec<Machine>,
-}
-
 pub struct MameSoftwareListApp {
-    emulators: Vec<Emulator>,
-    selected_emulator_id: String,
     paths: Paths,
     file_dialog_receiver: Option<mpsc::Receiver<Option<PathBuf>>>,
     error_messages: Vec<String>,
@@ -61,6 +41,7 @@ pub struct MameSoftwareListApp {
     system_selection_options: SystemSelectionOptions,
     software_list_selection_options: SoftwareListSelectionOptions,
     machine_selection_options: MachineSelectionOptions,
+    emulator_selection_options: EmulatorSelectionOptions,
 }
 
 impl MameSoftwareListApp {
@@ -77,8 +58,6 @@ impl MameSoftwareListApp {
             .unwrap();
 
         Self {
-            emulators: Vec::new(),
-            selected_emulator_id: String::new(),
             paths,
             file_dialog_receiver: None,
             error_messages: Vec::new(),
@@ -105,6 +84,10 @@ impl MameSoftwareListApp {
             machine_selection_options: MachineSelectionOptions {
                 selected_machine_id: 0,
                 machines: Vec::new(),
+            },
+            emulator_selection_options: EmulatorSelectionOptions {
+                selected_emulator_id: String::new(),
+                emulators: Vec::new(),
             },
         }
     }
@@ -149,7 +132,7 @@ impl MameSoftwareListApp {
     }
 
     fn fetch_emulators_for_system(&mut self, system_name: String) {
-        self.emulators = match get_emulators_by_system_id(system_name) {
+        self.emulator_selection_options.emulators = match get_emulators_by_system_id(system_name) {
             Ok(emulators) => emulators,
             Err(e) => {
                 self.error_messages.push(e.message.clone());
@@ -185,11 +168,11 @@ impl MameSoftwareListApp {
 
     fn start_button_clicked(&mut self) {
         if self.machine_selection_options.selected_machine_id != 0
-            && self.selected_emulator_id != ""
+            && self.emulator_selection_options.selected_emulator_id != ""
         {
             let system_name = self.get_selected_system().unwrap().name.clone();
             let machine = self.get_selected_machine().unwrap().clone();
-            let emulator_id = self.selected_emulator_id.clone();
+            let emulator_id = self.emulator_selection_options.selected_emulator_id.clone();
             let rom = self
                 .rom_selection_options
                 .get_selected_rom()
@@ -335,6 +318,10 @@ impl MameSoftwareListApp {
         self.fetch_roms_for_machine(machine_id);
         self.machine_selection_options.selected_machine_id = machine_id;
     }
+
+    fn on_emulator_id_changed(&mut self, emulator_id: String) {
+        self.emulator_selection_options.selected_emulator_id = emulator_id;
+    }
 }
 
 impl eframe::App for MameSoftwareListApp {
@@ -372,7 +359,10 @@ impl eframe::App for MameSoftwareListApp {
                     self.on_software_list_selection_changed(id);
                 });
 
-                show_emulators_combobox(ui, &self.emulators, &mut self.selected_emulator_id);
+                let emulator_selection_options = self.emulator_selection_options.clone();
+                show_emulators_combobox(ui, emulator_selection_options, &mut |id| {
+                    self.on_emulator_id_changed(id);
+                });
 
                 if ui.button("Start").clicked() {
                     self.start_button_clicked();

@@ -1,5 +1,11 @@
-use super::mame_software_list_app::SoftwareListSelectionOptions;
+use crate::models::SoftwareList;
 use eframe::egui;
+
+#[derive(Clone)]
+pub struct SoftwareListSelectionOptions {
+    pub selected_software_list_id: i32,
+    pub software_lists: Vec<SoftwareList>,
+}
 
 pub struct SoftwareListsComboBox<'a> {
     ui: &'a mut egui::Ui,

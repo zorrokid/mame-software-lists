@@ -1,6 +1,11 @@
+use crate::models::Machine;
 use eframe::egui;
 
-use super::mame_software_list_app::MachineSelectionOptions;
+#[derive(Clone)]
+pub struct MachineSelectionOptions {
+    pub selected_machine_id: i32,
+    pub machines: Vec<Machine>,
+}
 
 pub struct MachinesList<'a> {
     ui: &'a mut egui::Ui,
