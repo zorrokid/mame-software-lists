@@ -1,11 +1,8 @@
 use crate::{
-    configuration::{
-        emulators::{get_emulators_by_system_id, Emulator},
-        paths::Paths,
-    },
+    configuration::{emulators::get_emulators_by_system_id, paths::Paths},
     data_access::data_access_provider::{DataAccessProvider, DataAccessTrait},
     emulators::emulator_runner::run_with_emulator,
-    models::{Machine, System},
+    models::System,
     software_lists::{
         process::process_from_datafile,
         software_list_file_scanner::{
@@ -21,8 +18,7 @@ use super::{
     emulators_combobox::{show_emulators_combobox, EmulatorSelectionOptions},
     machines_list::{show_machines_list, MachineSelectionOptions},
     message_dialog::{show_message_dialog, MessageDialogOptions},
-    rom_selection_options::RomSelectionOptions,
-    roms_list::show_roms_list,
+    roms_list::{show_roms_list, RomSelectionOptions},
     scan_files_dialog::{show_scan_files_dialog, ScanFilesDialogOptions},
     software_lists_combobox::{show_software_lists_combobox, SoftwareListSelectionOptions},
     systems_combobox::{show_systems_combobox, SystemSelectionOptions},
@@ -72,7 +68,7 @@ impl MameSoftwareListApp {
                 software_lists,
                 selected_software_list_id: 0,
             },
-            rom_selection_options: RomSelectionOptions::new(0, 0, None, Vec::new()),
+            rom_selection_options: RomSelectionOptions::new(0, Vec::new()),
             system_selection_options: SystemSelectionOptions {
                 selected_system_id: 0,
                 systems,
@@ -121,14 +117,13 @@ impl MameSoftwareListApp {
             .iter()
             .find(|m| m.id == machine_id)
             .unwrap();
-        self.rom_selection_options
-            .set_roms(match self.data_access.get_roms_for_machine(machine) {
-                Ok(roms) => roms,
-                Err(e) => {
-                    self.error_messages.push(e.message);
-                    Vec::new()
-                }
-            })
+        self.rom_selection_options.roms = match self.data_access.get_roms_for_machine(machine) {
+            Ok(roms) => roms,
+            Err(e) => {
+                self.error_messages.push(e.message);
+                Vec::new()
+            }
+        }
     }
 
     fn fetch_emulators_for_system(&mut self, system_name: String) {
@@ -158,20 +153,16 @@ impl MameSoftwareListApp {
             .find(|s| s.id == self.system_selection_options.selected_system_id)
     }
 
-    // TODO: Move to MachineSelectionOptions
-    fn get_selected_machine(&self) -> Option<&Machine> {
-        self.machine_selection_options
-            .machines
-            .iter()
-            .find(|m| m.id == self.machine_selection_options.selected_machine_id)
-    }
-
     fn start_button_clicked(&mut self) {
         if self.machine_selection_options.selected_machine_id != 0
             && self.emulator_selection_options.selected_emulator_id != ""
         {
             let system_name = self.get_selected_system().unwrap().name.clone();
-            let machine = self.get_selected_machine().unwrap().clone();
+            let machine = self
+                .machine_selection_options
+                .get_selected_machine()
+                .unwrap()
+                .clone();
             let emulator_id = self.emulator_selection_options.selected_emulator_id.clone();
             let rom = self
                 .rom_selection_options
@@ -322,6 +313,10 @@ impl MameSoftwareListApp {
     fn on_emulator_id_changed(&mut self, emulator_id: String) {
         self.emulator_selection_options.selected_emulator_id = emulator_id;
     }
+
+    fn on_rom_selected(&mut self, rom_id: i32) {
+        self.rom_selection_options.selected_rom_id = rom_id;
+    }
 }
 
 impl eframe::App for MameSoftwareListApp {
@@ -369,13 +364,16 @@ impl eframe::App for MameSoftwareListApp {
                 }
             });
 
-            let machine_selection_options = self.machine_selection_options.clone();
             ui.add_sized(ui.available_size(), |ui: &mut egui::Ui| {
                 ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+                    let machine_selection_options = self.machine_selection_options.clone();
                     show_machines_list(ui, machine_selection_options, &mut |machine_id| {
                         self.on_machine_selection_changed(machine_id)
                     });
-                    show_roms_list(ui, &mut self.rom_selection_options);
+                    let rom_selection_options = self.rom_selection_options.clone();
+                    show_roms_list(ui, &rom_selection_options, &mut |rom_id| {
+                        self.on_rom_selected(rom_id)
+                    });
                 })
                 .response
             });

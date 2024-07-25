@@ -7,6 +7,21 @@ pub struct MachineSelectionOptions {
     pub machines: Vec<Machine>,
 }
 
+impl MachineSelectionOptions {
+    pub fn new(selected_machine_id: i32, machines: Vec<Machine>) -> Self {
+        Self {
+            selected_machine_id,
+            machines,
+        }
+    }
+
+    pub fn get_selected_machine(&self) -> Option<&Machine> {
+        self.machines
+            .iter()
+            .find(|m| m.id == self.selected_machine_id)
+    }
+}
+
 pub struct MachinesList<'a> {
     ui: &'a mut egui::Ui,
     machine_selection_options: MachineSelectionOptions,
