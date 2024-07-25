@@ -40,10 +40,13 @@ pub struct SoftwareListSelectionOptions {
     pub software_lists: Vec<SoftwareList>,
 }
 
+#[derive(Clone)]
+pub struct MachineSelectionOptions {
+    pub selected_machine_id: i32,
+    pub machines: Vec<Machine>,
+}
+
 pub struct MameSoftwareListApp {
-    selected_machine_id: i32,
-    previous_selected_machine_id: i32,
-    machines: Vec<Machine>,
     emulators: Vec<Emulator>,
     selected_emulator_id: String,
     paths: Paths,
@@ -57,6 +60,7 @@ pub struct MameSoftwareListApp {
     rom_selection_options: RomSelectionOptions,
     system_selection_options: SystemSelectionOptions,
     software_list_selection_options: SoftwareListSelectionOptions,
+    machine_selection_options: MachineSelectionOptions,
 }
 
 impl MameSoftwareListApp {
@@ -73,9 +77,6 @@ impl MameSoftwareListApp {
             .unwrap();
 
         Self {
-            selected_machine_id: 0,
-            previous_selected_machine_id: 0,
-            machines: Vec::new(),
             emulators: Vec::new(),
             selected_emulator_id: String::new(),
             paths,
@@ -101,6 +102,10 @@ impl MameSoftwareListApp {
                 selected_software_list_id: 0,
                 software_lists: Vec::new(),
             },
+            machine_selection_options: MachineSelectionOptions {
+                selected_machine_id: 0,
+                machines: Vec::new(),
+            },
         }
     }
 
@@ -116,17 +121,23 @@ impl MameSoftwareListApp {
     }
 
     fn fetch_machines_for_software_list(&mut self, s_list_id: i32) {
-        self.machines = match self.data_access.get_machines_for_software_list(s_list_id) {
-            Ok(machines) => machines,
-            Err(e) => {
-                self.error_messages.push(e.message);
-                Vec::new()
+        self.machine_selection_options.machines =
+            match self.data_access.get_machines_for_software_list(s_list_id) {
+                Ok(machines) => machines,
+                Err(e) => {
+                    self.error_messages.push(e.message);
+                    Vec::new()
+                }
             }
-        }
     }
 
     fn fetch_roms_for_machine(&mut self, machine_id: i32) {
-        let machine = self.machines.iter().find(|m| m.id == machine_id).unwrap();
+        let machine = self
+            .machine_selection_options
+            .machines
+            .iter()
+            .find(|m| m.id == machine_id)
+            .unwrap();
         self.rom_selection_options
             .set_roms(match self.data_access.get_roms_for_machine(machine) {
                 Ok(roms) => roms,
@@ -164,14 +175,18 @@ impl MameSoftwareListApp {
             .find(|s| s.id == self.system_selection_options.selected_system_id)
     }
 
+    // TODO: Move to MachineSelectionOptions
     fn get_selected_machine(&self) -> Option<&Machine> {
-        self.machines
+        self.machine_selection_options
+            .machines
             .iter()
-            .find(|m| m.id == self.selected_machine_id)
+            .find(|m| m.id == self.machine_selection_options.selected_machine_id)
     }
 
     fn start_button_clicked(&mut self) {
-        if self.selected_machine_id != 0 && self.selected_emulator_id != "" {
+        if self.machine_selection_options.selected_machine_id != 0
+            && self.selected_emulator_id != ""
+        {
             let system_name = self.get_selected_system().unwrap().name.clone();
             let machine = self.get_selected_machine().unwrap().clone();
             let emulator_id = self.selected_emulator_id.clone();
@@ -310,10 +325,15 @@ impl MameSoftwareListApp {
         self.system_selection_options.selected_system_id = system_id;
     }
 
-    fn on_software_list_selection_changed(&mut self, id: i32) {
-        self.fetch_machines_for_software_list(id);
+    fn on_software_list_selection_changed(&mut self, software_list_id: i32) {
+        self.fetch_machines_for_software_list(software_list_id);
         self.software_list_selection_options
-            .selected_software_list_id = id;
+            .selected_software_list_id = software_list_id;
+    }
+
+    fn on_machine_selection_changed(&mut self, machine_id: i32) {
+        self.fetch_roms_for_machine(machine_id);
+        self.machine_selection_options.selected_machine_id = machine_id;
     }
 }
 
@@ -341,9 +361,6 @@ impl eframe::App for MameSoftwareListApp {
             ui.heading("Mame Software Lists");
             ui.label("This is a simple app to start software from Mame Software Lists");
 
-            //let mut new_selected_software_list_id = None;
-            let mut new_selected_machine_id = None;
-
             let system_selection_options = self.system_selection_options.clone();
             ui.horizontal(|ui| {
                 show_systems_combobox(ui, system_selection_options, &mut |id| {
@@ -362,24 +379,16 @@ impl eframe::App for MameSoftwareListApp {
                 }
             });
 
+            let machine_selection_options = self.machine_selection_options.clone();
             ui.add_sized(ui.available_size(), |ui: &mut egui::Ui| {
                 ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
-                    show_machines_list(
-                        ui,
-                        &self.machines,
-                        &mut self.selected_machine_id,
-                        &mut self.previous_selected_machine_id,
-                        &mut new_selected_machine_id,
-                    );
+                    show_machines_list(ui, machine_selection_options, &mut |machine_id| {
+                        self.on_machine_selection_changed(machine_id)
+                    });
                     show_roms_list(ui, &mut self.rom_selection_options);
                 })
                 .response
             });
-
-            if let Some(machine_id) = new_selected_machine_id {
-                self.fetch_roms_for_machine(machine_id);
-                self.previous_selected_machine_id = machine_id;
-            }
 
             if self.scan_files_dialog_options.show {
                 let cloned_software_lists = self.scan_files_dialog_options.software_lists.clone();
