@@ -1,5 +1,4 @@
-use crate::data_access::data_access_provider::DataAccessTrait;
-use crate::files::scan_archives::scan_archives;
+use crate::files::scan_archives::{scan_archives, ScanResult};
 use crate::models::SoftwareList;
 use std::path::PathBuf;
 
@@ -7,18 +6,18 @@ pub struct SoftwareListScannerError {
     pub message: String,
 }
 
-pub struct SoftwareListFileScanner<'a> {
-    data_access: &'a mut dyn DataAccessTrait,
-    software_list_rom_folder: &'a PathBuf,
+pub struct SoftwareListScannerResult {
+    pub scan_result: ScanResult,
+    pub software_list: SoftwareList,
 }
 
-impl<'a> SoftwareListFileScanner<'a> {
-    pub fn new(
-        data_access: &'a mut dyn DataAccessTrait,
-        software_list_rom_folder: &'a PathBuf,
-    ) -> Self {
+pub struct SoftwareListFileScanner {
+    software_list_rom_folder: PathBuf,
+}
+
+impl SoftwareListFileScanner {
+    pub fn new(software_list_rom_folder: PathBuf) -> Self {
         Self {
-            data_access,
             software_list_rom_folder,
         }
     }
@@ -32,16 +31,14 @@ impl<'a> SoftwareListFileScanner<'a> {
     pub fn scan_files(
         &mut self,
         software_list: &SoftwareList,
-    ) -> Result<(), SoftwareListScannerError> {
+    ) -> Result<SoftwareListScannerResult, SoftwareListScannerError> {
         let path = self.generate_path(&software_list);
         let result = scan_archives(path).map_err(|e| SoftwareListScannerError {
             message: format!("Error scanning archives: {}", e.message),
         })?;
-        self.data_access
-            .set_matched_roms(&software_list, &result.found_checksums)
-            .map_err(|e| SoftwareListScannerError {
-                message: format!("Error setting matched roms: {}", e.message),
-            })?;
-        Ok(())
+        Ok(SoftwareListScannerResult {
+            scan_result: result,
+            software_list: software_list.clone(),
+        })
     }
 }

@@ -6,17 +6,25 @@ use crate::{
     data_access::data_access_provider::{DataAccessProvider, DataAccessTrait},
     emulators::emulator_runner::run_with_emulator,
     models::{Machine, Rom, SoftwareList, System},
-    software_lists::process::process_from_datafile,
-    software_lists::software_list_file_scanner::SoftwareListFileScanner,
+    software_lists::{
+        process::process_from_datafile,
+        software_list_file_scanner::{
+            SoftwareListFileScanner, SoftwareListScannerError, SoftwareListScannerResult,
+        },
+    },
 };
 use eframe::egui;
 use rfd::FileDialog;
 use std::{path::PathBuf, sync::mpsc, thread};
 
 use super::{
-    emulators_combobox::show_emulators_combobox, machines_list::show_machines_list,
-    roms_list::show_roms_list, scan_files_dialog::show_scan_files_dialog,
-    software_lists_combobox::show_software_lists_combobox, systems_combobox::show_systems_combobox,
+    emulators_combobox::show_emulators_combobox,
+    machines_list::show_machines_list,
+    message_dialog::{show_message_dialog, MessageDialogOptions},
+    roms_list::show_roms_list,
+    scan_files_dialog::show_scan_files_dialog,
+    software_lists_combobox::show_software_lists_combobox,
+    systems_combobox::show_systems_combobox,
 };
 
 pub struct MameSoftwareListApp {
@@ -41,8 +49,9 @@ pub struct MameSoftwareListApp {
     data_access: DataAccessProvider,
     scan_software_list_id: i32,
     software_lists: Vec<SoftwareList>,
-    // TODO: add scanner receiver to show result of scan operation
-    //software_list_file_scanner_receiver: Option<mpsc::Receiver<Option<i32>>>,
+    software_list_file_scanner_receiver:
+        Option<mpsc::Receiver<Option<Result<SoftwareListScannerResult, SoftwareListScannerError>>>>,
+    message_dialog_options: MessageDialogOptions,
 }
 
 impl MameSoftwareListApp {
@@ -81,6 +90,11 @@ impl MameSoftwareListApp {
             data_access,
             scan_software_list_id: 0,
             software_lists,
+            software_list_file_scanner_receiver: None,
+            message_dialog_options: MessageDialogOptions {
+                show: false,
+                message: String::new(),
+            },
         }
     }
 
@@ -195,22 +209,57 @@ impl MameSoftwareListApp {
         self.show_scan_files_dialog = false;
         if let Some(id) = s_list_id {
             self.scan_software_list_id = id;
-            // TODO: this has to be done in a separate thread
 
-            let rom_path: PathBuf = PathBuf::from(self.paths.software_lists_roms_folder.clone());
-            let mut scanner = SoftwareListFileScanner::new(&mut self.data_access, &rom_path);
+            let rom_path: PathBuf =
+                PathBuf::from(self.paths.software_lists_roms_folder.clone()).clone();
             let selected_software_list = self
                 .software_lists
                 .iter()
                 .find(|s| s.id == id)
                 .unwrap()
                 .clone();
-            scanner
-                .scan_files(&selected_software_list)
-                .map_err(|e| {
-                    self.error_messages.push(e.message);
-                })
-                .ok();
+
+            let (sender, receiver) = mpsc::channel();
+            thread::spawn(move || {
+                let mut scanner = SoftwareListFileScanner::new(rom_path);
+                let result = scanner.scan_files(&selected_software_list);
+                sender.send(Some(result)).unwrap();
+            });
+
+            self.software_list_file_scanner_receiver = Some(receiver);
+        }
+    }
+
+    fn updated_matched_files(&mut self, result: SoftwareListScannerResult) {
+        let matching_files_count = self
+            .data_access
+            .set_matched_roms(&result.software_list, &result.scan_result.found_checksums)
+            .map_err(|e| {
+                self.error_messages.push(e.message);
+            })
+            .unwrap();
+
+        self.message_dialog_options = MessageDialogOptions {
+            show: true,
+            message: format!("Matching files count: {:?}", matching_files_count),
+        };
+    }
+
+    fn check_software_list_file_scanner_receiver(&mut self) {
+        if let Some(receiver) = &self.software_list_file_scanner_receiver {
+            if let Ok(result) = receiver.try_recv() {
+                if let Some(result) = result {
+                    match result {
+                        Ok(scan_result) => {
+                            self.updated_matched_files(scan_result);
+                        }
+                        Err(e) => {
+                            self.error_messages.push(e.message);
+                        }
+                    }
+                }
+                self.software_list_file_scanner_receiver = None;
+            }
         }
     }
 
@@ -350,7 +399,14 @@ impl eframe::App for MameSoftwareListApp {
                 );
             }
 
+            if self.message_dialog_options.show {
+                show_message_dialog(ctx, &self.message_dialog_options.message, &mut || {
+                    self.message_dialog_options.show = false;
+                })
+            }
+
             self.check_file_dialog_receiver();
+            self.check_software_list_file_scanner_receiver();
         });
 
         egui::TopBottomPanel::bottom("error_console").show(ctx, |ui| {

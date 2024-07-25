@@ -18,7 +18,7 @@ pub trait DataAccessTrait {
         &mut self,
         software_list: &SoftwareList,
         checksums: &Vec<String>,
-    ) -> Result<(), DataAccessError>;
+    ) -> Result<usize, DataAccessError>;
     fn get_software_lists_for_system(
         &mut self,
         system_id: i32,
@@ -80,7 +80,7 @@ impl<'a> DataAccessTrait for DataAccessProvider {
         &mut self,
         software_list: &SoftwareList,
         checksums: &Vec<String>,
-    ) -> Result<(), DataAccessError> {
+    ) -> Result<usize, DataAccessError> {
         let software_list_roms =
             self.fetch_software_list_roms(software_list)
                 .map_err(|e| DataAccessError {
@@ -99,7 +99,7 @@ impl<'a> DataAccessTrait for DataAccessProvider {
             },
         )?;
 
-        Ok(())
+        Ok(matched_rom_ids.len())
     }
 
     fn get_software_lists_for_system(
