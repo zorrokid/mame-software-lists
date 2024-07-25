@@ -31,17 +31,19 @@ use super::{
 #[derive(Clone)]
 pub struct SystemSelectionOptions {
     pub selected_system_id: i32,
-    pub previous_selected_system_id: i32,
     pub systems: Vec<System>,
 }
 
+#[derive(Clone)]
+pub struct SoftwareListSelectionOptions {
+    pub selected_software_list_id: i32,
+    pub software_lists: Vec<SoftwareList>,
+}
+
 pub struct MameSoftwareListApp {
-    selected_software_list_id: i32,
-    previous_selected_software_list_id: i32,
     selected_machine_id: i32,
     previous_selected_machine_id: i32,
     machines: Vec<Machine>,
-    software_lists_for_selected_system: Vec<SoftwareList>,
     emulators: Vec<Emulator>,
     selected_emulator_id: String,
     paths: Paths,
@@ -54,6 +56,7 @@ pub struct MameSoftwareListApp {
     scan_files_dialog_options: ScanFilesDialogOptions,
     rom_selection_options: RomSelectionOptions,
     system_selection_options: SystemSelectionOptions,
+    software_list_selection_options: SoftwareListSelectionOptions,
 }
 
 impl MameSoftwareListApp {
@@ -70,12 +73,9 @@ impl MameSoftwareListApp {
             .unwrap();
 
         Self {
-            selected_software_list_id: 0,
-            previous_selected_software_list_id: 0,
             selected_machine_id: 0,
             previous_selected_machine_id: 0,
             machines: Vec::new(),
-            software_lists_for_selected_system: Vec::new(),
             emulators: Vec::new(),
             selected_emulator_id: String::new(),
             paths,
@@ -95,14 +95,17 @@ impl MameSoftwareListApp {
             rom_selection_options: RomSelectionOptions::new(0, 0, None, Vec::new()),
             system_selection_options: SystemSelectionOptions {
                 selected_system_id: 0,
-                previous_selected_system_id: 0,
                 systems,
+            },
+            software_list_selection_options: SoftwareListSelectionOptions {
+                selected_software_list_id: 0,
+                software_lists: Vec::new(),
             },
         }
     }
 
     fn fetch_software_lists_for_system(&mut self, system_id: i32) {
-        self.software_lists_for_selected_system =
+        self.software_list_selection_options.software_lists =
             match self.data_access.get_software_lists_for_system(system_id) {
                 Ok(s_lists) => s_lists,
                 Err(e) => {
@@ -304,7 +307,13 @@ impl MameSoftwareListApp {
             .name
             .clone();
         self.fetch_emulators_for_system(system_name);
-        self.system_selection_options.previous_selected_system_id = system_id;
+        self.system_selection_options.selected_system_id = system_id;
+    }
+
+    fn on_software_list_selection_changed(&mut self, id: i32) {
+        self.fetch_machines_for_software_list(id);
+        self.software_list_selection_options
+            .selected_software_list_id = id;
     }
 }
 
@@ -332,7 +341,7 @@ impl eframe::App for MameSoftwareListApp {
             ui.heading("Mame Software Lists");
             ui.label("This is a simple app to start software from Mame Software Lists");
 
-            let mut new_selected_software_list_id = None;
+            //let mut new_selected_software_list_id = None;
             let mut new_selected_machine_id = None;
 
             let system_selection_options = self.system_selection_options.clone();
@@ -341,13 +350,10 @@ impl eframe::App for MameSoftwareListApp {
                     self.on_system_id_changed(id)
                 });
 
-                show_software_lists_combobox(
-                    ui,
-                    &self.software_lists_for_selected_system,
-                    &mut self.selected_software_list_id,
-                    &mut self.previous_selected_software_list_id,
-                    &mut new_selected_software_list_id,
-                );
+                let software_list_selection_options = self.software_list_selection_options.clone();
+                show_software_lists_combobox(ui, software_list_selection_options, &mut |id| {
+                    self.on_software_list_selection_changed(id);
+                });
 
                 show_emulators_combobox(ui, &self.emulators, &mut self.selected_emulator_id);
 
@@ -369,11 +375,6 @@ impl eframe::App for MameSoftwareListApp {
                 })
                 .response
             });
-
-            if let Some(s_list_id) = new_selected_software_list_id {
-                self.fetch_machines_for_software_list(s_list_id);
-                self.previous_selected_software_list_id = s_list_id;
-            }
 
             if let Some(machine_id) = new_selected_machine_id {
                 self.fetch_roms_for_machine(machine_id);
