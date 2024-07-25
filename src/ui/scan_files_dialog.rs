@@ -2,6 +2,11 @@ use eframe::egui;
 
 use crate::models::SoftwareList;
 
+pub struct ScanFilesDialogOptions {
+    pub software_lists: Vec<SoftwareList>,
+    pub selected_software_list_id: i32,
+    pub show: bool,
+}
 pub struct ScanFilesDialog<'a> {
     close_dialog: &'a mut dyn FnMut(Option<i32>),
     software_lists: &'a Vec<SoftwareList>,

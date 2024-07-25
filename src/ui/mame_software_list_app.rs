@@ -5,7 +5,7 @@ use crate::{
     },
     data_access::data_access_provider::{DataAccessProvider, DataAccessTrait},
     emulators::emulator_runner::run_with_emulator,
-    models::{Machine, Rom, SoftwareList, System},
+    models::{Machine, SoftwareList, System},
     software_lists::{
         process::process_from_datafile,
         software_list_file_scanner::{
@@ -21,8 +21,9 @@ use super::{
     emulators_combobox::show_emulators_combobox,
     machines_list::show_machines_list,
     message_dialog::{show_message_dialog, MessageDialogOptions},
+    rom_selection_options::RomSelectionOptions,
     roms_list::show_roms_list,
-    scan_files_dialog::show_scan_files_dialog,
+    scan_files_dialog::{show_scan_files_dialog, ScanFilesDialogOptions},
     software_lists_combobox::show_software_lists_combobox,
     systems_combobox::show_systems_combobox,
 };
@@ -42,16 +43,12 @@ pub struct MameSoftwareListApp {
     paths: Paths,
     file_dialog_receiver: Option<mpsc::Receiver<Option<PathBuf>>>,
     error_messages: Vec<String>,
-    roms: Vec<Rom>,
-    selected_rom_id: i32,
-    previous_selected_rom_id: i32,
-    show_scan_files_dialog: bool,
     data_access: DataAccessProvider,
-    scan_software_list_id: i32,
-    software_lists: Vec<SoftwareList>,
     software_list_file_scanner_receiver:
         Option<mpsc::Receiver<Option<Result<SoftwareListScannerResult, SoftwareListScannerError>>>>,
     message_dialog_options: MessageDialogOptions,
+    scan_files_dialog_options: ScanFilesDialogOptions,
+    rom_selection_options: RomSelectionOptions,
 }
 
 impl MameSoftwareListApp {
@@ -83,18 +80,18 @@ impl MameSoftwareListApp {
             paths,
             file_dialog_receiver: None,
             error_messages: Vec::new(),
-            roms: Vec::new(),
-            selected_rom_id: 0,
-            previous_selected_rom_id: 0,
-            show_scan_files_dialog: false,
             data_access,
-            scan_software_list_id: 0,
-            software_lists,
             software_list_file_scanner_receiver: None,
             message_dialog_options: MessageDialogOptions {
                 show: false,
                 message: String::new(),
             },
+            scan_files_dialog_options: ScanFilesDialogOptions {
+                show: false,
+                software_lists,
+                selected_software_list_id: 0,
+            },
+            rom_selection_options: RomSelectionOptions::new(0, 0, None, Vec::new()),
         }
     }
 
@@ -121,13 +118,14 @@ impl MameSoftwareListApp {
 
     fn fetch_roms_for_machine(&mut self, machine_id: i32) {
         let machine = self.machines.iter().find(|m| m.id == machine_id).unwrap();
-        self.roms = match self.data_access.get_roms_for_machine(machine) {
-            Ok(roms) => roms,
-            Err(e) => {
-                self.error_messages.push(e.message);
-                Vec::new()
-            }
-        }
+        self.rom_selection_options
+            .set_roms(match self.data_access.get_roms_for_machine(machine) {
+                Ok(roms) => roms,
+                Err(e) => {
+                    self.error_messages.push(e.message);
+                    Vec::new()
+                }
+            })
     }
 
     fn fetch_emulators_for_system(&mut self, system_name: String) {
@@ -162,16 +160,16 @@ impl MameSoftwareListApp {
             .find(|m| m.id == self.selected_machine_id)
     }
 
-    fn get_selected_rom(&self) -> Option<&Rom> {
-        self.roms.iter().find(|r| r.id == self.selected_rom_id)
-    }
-
     fn start_button_clicked(&mut self) {
         if self.selected_machine_id != 0 && self.selected_emulator_id != "" {
             let system_name = self.get_selected_system().unwrap().name.clone();
             let machine = self.get_selected_machine().unwrap().clone();
             let emulator_id = self.selected_emulator_id.clone();
-            let rom = self.get_selected_rom().cloned().map(|r| r.clone());
+            let rom = self
+                .rom_selection_options
+                .get_selected_rom()
+                .cloned()
+                .map(|r| r.clone());
 
             let handle =
                 thread::spawn(move || run_with_emulator(&machine, system_name, emulator_id, rom));
@@ -202,17 +200,18 @@ impl MameSoftwareListApp {
     }
 
     fn scan_available_files(&mut self) {
-        self.show_scan_files_dialog = true;
+        self.scan_files_dialog_options.show = true;
     }
 
     fn close_available_files_dialog(&mut self, s_list_id: Option<i32>) {
-        self.show_scan_files_dialog = false;
+        self.scan_files_dialog_options.show = false;
         if let Some(id) = s_list_id {
-            self.scan_software_list_id = id;
+            self.scan_files_dialog_options.selected_software_list_id = id;
 
             let rom_path: PathBuf =
                 PathBuf::from(self.paths.software_lists_roms_folder.clone()).clone();
             let selected_software_list = self
+                .scan_files_dialog_options
                 .software_lists
                 .iter()
                 .find(|s| s.id == id)
@@ -315,7 +314,6 @@ impl eframe::App for MameSoftwareListApp {
             let mut new_selected_systemid = None;
             let mut new_selected_software_list_id = None;
             let mut new_selected_machine_id = None;
-            let mut new_selected_rom_id = None;
 
             ui.horizontal(|ui| {
                 show_systems_combobox(
@@ -350,13 +348,7 @@ impl eframe::App for MameSoftwareListApp {
                         &mut self.previous_selected_machine_id,
                         &mut new_selected_machine_id,
                     );
-                    show_roms_list(
-                        ui,
-                        &self.roms,
-                        &mut self.selected_rom_id,
-                        &mut self.previous_selected_rom_id,
-                        &mut new_selected_rom_id,
-                    );
+                    show_roms_list(ui, &mut self.rom_selection_options);
                 })
                 .response
             });
@@ -384,13 +376,10 @@ impl eframe::App for MameSoftwareListApp {
                 self.previous_selected_machine_id = machine_id;
             }
 
-            if let Some(rom_id) = new_selected_rom_id {
-                self.previous_selected_rom_id = rom_id;
-            }
-
-            if self.show_scan_files_dialog {
-                let cloned_software_lists = self.software_lists.clone();
-                let selected_software_list_id = self.scan_software_list_id;
+            if self.scan_files_dialog_options.show {
+                let cloned_software_lists = self.scan_files_dialog_options.software_lists.clone();
+                let selected_software_list_id =
+                    self.scan_files_dialog_options.selected_software_list_id;
                 show_scan_files_dialog(
                     ctx,
                     |id: Option<i32>| self.close_available_files_dialog(id),

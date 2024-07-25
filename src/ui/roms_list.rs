@@ -1,28 +1,17 @@
-use crate::models::Rom;
 use eframe::egui;
+
+use super::rom_selection_options::RomSelectionOptions;
 
 pub struct RomsList<'a> {
     ui: &'a mut egui::Ui,
-    roms: &'a Vec<Rom>,
-    selected_rom_id: &'a mut i32,
-    previous_selected_rom_id: &'a mut i32,
-    new_selected_rom_id: &'a mut Option<i32>,
+    rom_selection_options: &'a mut RomSelectionOptions,
 }
 
 impl<'a> RomsList<'a> {
-    pub fn new(
-        ui: &'a mut egui::Ui,
-        roms: &'a Vec<Rom>,
-        selected_rom_id: &'a mut i32,
-        previous_selected_rom_id: &'a mut i32,
-        new_selected_rom_id: &'a mut Option<i32>,
-    ) -> Self {
+    pub fn new(ui: &'a mut egui::Ui, rom_selection_options: &'a mut RomSelectionOptions) -> Self {
         Self {
             ui,
-            roms,
-            selected_rom_id,
-            previous_selected_rom_id,
-            new_selected_rom_id,
+            rom_selection_options,
         }
     }
 
@@ -35,18 +24,21 @@ impl<'a> RomsList<'a> {
                     ui.label("Available");
                     ui.end_row();
 
-                    for rom in self.roms.iter() {
+                    let roms = self.rom_selection_options.get_roms().clone();
+                    let mut selected_rom_id =
+                        self.rom_selection_options.get_selected_rom_id().clone();
+
+                    for rom in roms.iter() {
                         if ui
                             .selectable_value(
-                                self.selected_rom_id,
+                                &mut selected_rom_id,
                                 rom.id.clone(),
                                 rom.name.clone(),
                             )
                             .clicked()
                         {
-                            if *self.selected_rom_id != *self.previous_selected_rom_id {
-                                *self.new_selected_rom_id = Some(self.selected_rom_id.clone());
-                            }
+                            self.rom_selection_options
+                                .set_selected_rom_id(selected_rom_id);
                         }
                         ui.label(if rom.have { "Yes" } else { "No" });
                         ui.end_row();
@@ -56,19 +48,6 @@ impl<'a> RomsList<'a> {
     }
 }
 
-pub fn show_roms_list(
-    ui: &mut egui::Ui,
-    roms: &Vec<Rom>,
-    selected_rom_id: &mut i32,
-    previous_selected_rom_id: &mut i32,
-    new_selected_rom_id: &mut Option<i32>,
-) {
-    RomsList::new(
-        ui,
-        roms,
-        selected_rom_id,
-        previous_selected_rom_id,
-        new_selected_rom_id,
-    )
-    .show();
+pub fn show_roms_list(ui: &mut egui::Ui, rom_selection_options: &mut RomSelectionOptions) {
+    RomsList::new(ui, rom_selection_options).show();
 }
