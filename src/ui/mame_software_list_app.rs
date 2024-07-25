@@ -222,7 +222,7 @@ impl MameSoftwareListApp {
         }
     }
 
-    fn updated_matched_files(&mut self, result: SoftwareListScannerResult) {
+    fn update_matched_files(&mut self, result: SoftwareListScannerResult) {
         let matching_files_count = self
             .data_access
             .set_matched_roms(&result.software_list, &result.scan_result.found_checksums)
@@ -243,7 +243,7 @@ impl MameSoftwareListApp {
                 if let Some(result) = result {
                     match result {
                         Ok(scan_result) => {
-                            self.updated_matched_files(scan_result);
+                            self.update_matched_files(scan_result);
                         }
                         Err(e) => {
                             self.error_messages.push(e.message);
