@@ -7,6 +7,21 @@ pub struct SystemSelectionOptions {
     pub systems: Vec<System>,
 }
 
+impl SystemSelectionOptions {
+    pub fn new(selected_system_id: i32, systems: Vec<System>) -> Self {
+        Self {
+            selected_system_id,
+            systems,
+        }
+    }
+
+    pub fn get_selected_system(&self) -> Option<&System> {
+        self.systems
+            .iter()
+            .find(|s| s.id == self.selected_system_id)
+    }
+}
+
 pub struct SystemsComboBox<'a> {
     ui: &'a mut egui::Ui,
     system_selection_options: SystemSelectionOptions,

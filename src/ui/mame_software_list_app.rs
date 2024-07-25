@@ -2,7 +2,6 @@ use crate::{
     configuration::{emulators::get_emulators_by_system_id, paths::Paths},
     data_access::data_access_provider::{DataAccessProvider, DataAccessTrait},
     emulators::emulator_runner::run_with_emulator,
-    models::System,
     software_lists::{
         process::process_from_datafile,
         software_list_file_scanner::{
@@ -69,10 +68,7 @@ impl MameSoftwareListApp {
                 selected_software_list_id: 0,
             },
             rom_selection_options: RomSelectionOptions::new(0, Vec::new()),
-            system_selection_options: SystemSelectionOptions {
-                selected_system_id: 0,
-                systems,
-            },
+            system_selection_options: SystemSelectionOptions::new(0, systems),
             software_list_selection_options: SoftwareListSelectionOptions {
                 selected_software_list_id: 0,
                 software_lists: Vec::new(),
@@ -146,18 +142,16 @@ impl MameSoftwareListApp {
         }
     }
 
-    fn get_selected_system(&self) -> Option<&System> {
-        self.system_selection_options
-            .systems
-            .iter()
-            .find(|s| s.id == self.system_selection_options.selected_system_id)
-    }
-
     fn start_button_clicked(&mut self) {
         if self.machine_selection_options.selected_machine_id != 0
             && self.emulator_selection_options.selected_emulator_id != ""
         {
-            let system_name = self.get_selected_system().unwrap().name.clone();
+            let system_name = self
+                .system_selection_options
+                .get_selected_system()
+                .unwrap()
+                .name
+                .clone();
             let machine = self
                 .machine_selection_options
                 .get_selected_machine()
