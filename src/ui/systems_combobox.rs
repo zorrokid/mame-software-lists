@@ -1,28 +1,22 @@
-use crate::models::System;
+use super::mame_software_list_app::SystemSelectionOptions;
 use eframe::egui;
 
 pub struct SystemsComboBox<'a> {
     ui: &'a mut egui::Ui,
-    systems: &'a Vec<System>,
-    selected_system_id: &'a mut i32,
-    previous_selected_system_id: &'a mut i32,
-    new_selected_systemid: &'a mut Option<i32>,
+    system_selection_options: SystemSelectionOptions,
+    on_system_id_changed: &'a mut dyn FnMut(i32),
 }
 
 impl<'a> SystemsComboBox<'a> {
     pub fn new(
         ui: &'a mut egui::Ui,
-        systems: &'a Vec<System>,
-        selected_system_id: &'a mut i32,
-        previous_selected_system_id: &'a mut i32,
-        new_selected_systemid: &'a mut Option<i32>,
+        system_selection_options: SystemSelectionOptions,
+        on_system_id_changed: &'a mut dyn FnMut(i32),
     ) -> Self {
         Self {
             ui,
-            systems,
-            selected_system_id,
-            previous_selected_system_id,
-            new_selected_systemid,
+            system_selection_options,
+            on_system_id_changed,
         }
     }
 
@@ -30,25 +24,26 @@ impl<'a> SystemsComboBox<'a> {
         egui::ComboBox::from_label("Systems")
             .selected_text(
                 &self
+                    .system_selection_options
                     .systems
                     .iter()
-                    .find(|s| s.id == *self.selected_system_id)
+                    .find(|s| s.id == self.system_selection_options.selected_system_id)
                     .map(|s| s.name.clone())
                     .unwrap_or_default(),
             )
             .show_ui(self.ui, |ui| {
-                for system in self.systems.iter() {
+                let mut selected_system_id =
+                    self.system_selection_options.selected_system_id.clone();
+                for system in self.system_selection_options.systems.iter() {
                     if ui
                         .selectable_value(
-                            self.selected_system_id,
+                            &mut selected_system_id,
                             system.id.clone(),
                             system.name.clone(),
                         )
                         .clicked()
                     {
-                        if *self.selected_system_id != *self.previous_selected_system_id {
-                            *self.new_selected_systemid = Some(self.selected_system_id.clone());
-                        }
+                        (self.on_system_id_changed)(selected_system_id);
                     }
                 }
             });
@@ -57,17 +52,9 @@ impl<'a> SystemsComboBox<'a> {
 
 pub fn show_systems_combobox(
     ui: &mut egui::Ui,
-    systems: &Vec<System>,
-    selected_system_id: &mut i32,
-    previous_selected_system_id: &mut i32,
-    new_selected_systemid: &mut Option<i32>,
+    system_selection_options: SystemSelectionOptions,
+    on_system_id_changed: &mut dyn FnMut(i32),
 ) {
-    let mut combobox = SystemsComboBox::new(
-        ui,
-        systems,
-        selected_system_id,
-        previous_selected_system_id,
-        new_selected_systemid,
-    );
+    let mut combobox = SystemsComboBox::new(ui, system_selection_options, on_system_id_changed);
     combobox.show();
 }

@@ -28,10 +28,14 @@ use super::{
     systems_combobox::show_systems_combobox,
 };
 
+#[derive(Clone)]
+pub struct SystemSelectionOptions {
+    pub selected_system_id: i32,
+    pub previous_selected_system_id: i32,
+    pub systems: Vec<System>,
+}
+
 pub struct MameSoftwareListApp {
-    systems: Vec<System>,
-    selected_system_id: i32,
-    previous_selected_system_id: i32,
     selected_software_list_id: i32,
     previous_selected_software_list_id: i32,
     selected_machine_id: i32,
@@ -49,6 +53,7 @@ pub struct MameSoftwareListApp {
     message_dialog_options: MessageDialogOptions,
     scan_files_dialog_options: ScanFilesDialogOptions,
     rom_selection_options: RomSelectionOptions,
+    system_selection_options: SystemSelectionOptions,
 }
 
 impl MameSoftwareListApp {
@@ -65,10 +70,6 @@ impl MameSoftwareListApp {
             .unwrap();
 
         Self {
-            systems,
-            // TODO: maybe use Option instead?
-            selected_system_id: 0,
-            previous_selected_system_id: 0,
             selected_software_list_id: 0,
             previous_selected_software_list_id: 0,
             selected_machine_id: 0,
@@ -92,6 +93,11 @@ impl MameSoftwareListApp {
                 selected_software_list_id: 0,
             },
             rom_selection_options: RomSelectionOptions::new(0, 0, None, Vec::new()),
+            system_selection_options: SystemSelectionOptions {
+                selected_system_id: 0,
+                previous_selected_system_id: 0,
+                systems,
+            },
         }
     }
 
@@ -139,7 +145,7 @@ impl MameSoftwareListApp {
     }
 
     fn fetch_systems(&mut self) {
-        self.systems = match self.data_access.get_systems() {
+        self.system_selection_options.systems = match self.data_access.get_systems() {
             Ok(systems) => systems,
             Err(e) => {
                 self.error_messages.push(e.message);
@@ -149,9 +155,10 @@ impl MameSoftwareListApp {
     }
 
     fn get_selected_system(&self) -> Option<&System> {
-        self.systems
+        self.system_selection_options
+            .systems
             .iter()
-            .find(|s| s.id == self.selected_system_id)
+            .find(|s| s.id == self.system_selection_options.selected_system_id)
     }
 
     fn get_selected_machine(&self) -> Option<&Machine> {
@@ -285,6 +292,20 @@ impl MameSoftwareListApp {
             }
         }
     }
+
+    fn on_system_id_changed(&mut self, system_id: i32) {
+        self.fetch_software_lists_for_system(system_id);
+        let system_name = self
+            .system_selection_options
+            .systems
+            .iter()
+            .find(|s| s.id == system_id)
+            .unwrap()
+            .name
+            .clone();
+        self.fetch_emulators_for_system(system_name);
+        self.system_selection_options.previous_selected_system_id = system_id;
+    }
 }
 
 impl eframe::App for MameSoftwareListApp {
@@ -311,18 +332,14 @@ impl eframe::App for MameSoftwareListApp {
             ui.heading("Mame Software Lists");
             ui.label("This is a simple app to start software from Mame Software Lists");
 
-            let mut new_selected_systemid = None;
             let mut new_selected_software_list_id = None;
             let mut new_selected_machine_id = None;
 
+            let system_selection_options = self.system_selection_options.clone();
             ui.horizontal(|ui| {
-                show_systems_combobox(
-                    ui,
-                    &self.systems,
-                    &mut self.selected_system_id,
-                    &mut self.previous_selected_system_id,
-                    &mut new_selected_systemid,
-                );
+                show_systems_combobox(ui, system_selection_options, &mut |id| {
+                    self.on_system_id_changed(id)
+                });
 
                 show_software_lists_combobox(
                     ui,
@@ -352,19 +369,6 @@ impl eframe::App for MameSoftwareListApp {
                 })
                 .response
             });
-
-            if let Some(system_id) = new_selected_systemid {
-                self.fetch_software_lists_for_system(system_id);
-                let system_name = self
-                    .systems
-                    .iter()
-                    .find(|s| s.id == system_id)
-                    .unwrap()
-                    .name
-                    .clone();
-                self.fetch_emulators_for_system(system_name);
-                self.previous_selected_system_id = system_id;
-            }
 
             if let Some(s_list_id) = new_selected_software_list_id {
                 self.fetch_machines_for_software_list(s_list_id);
