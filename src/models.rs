@@ -47,7 +47,7 @@ pub struct MachineRom {
     pub rom_id: i32,
 }
 
-#[derive(Queryable, Selectable, Clone)]
+#[derive(Queryable, Selectable, Clone, PartialEq)]
 pub struct System {
     pub id: i32,
     pub name: String,

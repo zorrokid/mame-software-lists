@@ -2,7 +2,7 @@ use crate::{
     configuration::{emulators::get_emulators_by_system_id, paths::Paths},
     data_access::data_access_provider::{DataAccessProvider, DataAccessTrait},
     emulators::emulator_runner::run_with_emulator,
-    models::{Machine, Rom},
+    models::{Machine, Rom, System},
     software_lists::{
         process::process_from_datafile,
         software_list_file_scanner::{
@@ -72,7 +72,10 @@ impl MameSoftwareListApp {
                 selected_rom: None,
                 roms: Vec::new(),
             },
-            system_selection_options: SystemSelectionOptions::new(0, systems),
+            system_selection_options: SystemSelectionOptions {
+                selected_system: None,
+                systems,
+            },
             software_list_selection_options: SoftwareListSelectionOptions {
                 selected_software_list_id: 0,
                 software_lists: Vec::new(),
@@ -148,14 +151,15 @@ impl MameSoftwareListApp {
 
     fn start_button_clicked(&mut self) {
         if self.machine_selection_options.selected_machine.is_some()
+            && self.system_selection_options.selected_system.is_some()
             && self.emulator_selection_options.selected_emulator_id != ""
         {
             let system_name = self
                 .system_selection_options
-                .get_selected_system()
+                .selected_system
+                .clone()
                 .unwrap()
-                .name
-                .clone();
+                .name;
             let machine = self
                 .machine_selection_options
                 .selected_machine
@@ -283,18 +287,12 @@ impl MameSoftwareListApp {
         }
     }
 
-    fn on_system_id_changed(&mut self, system_id: i32) {
-        self.fetch_software_lists_for_system(system_id);
-        let system_name = self
-            .system_selection_options
-            .systems
-            .iter()
-            .find(|s| s.id == system_id)
-            .unwrap()
-            .name
-            .clone();
-        self.fetch_emulators_for_system(system_name);
-        self.system_selection_options.selected_system_id = system_id;
+    fn on_system_id_changed(&mut self, system: Option<System>) {
+        if let Some(system) = system.clone() {
+            self.fetch_software_lists_for_system(system.id);
+            self.fetch_emulators_for_system(system.name);
+        }
+        self.system_selection_options.selected_system = system;
     }
 
     fn on_software_list_selection_changed(&mut self, software_list_id: i32) {
