@@ -259,17 +259,21 @@ impl MameSoftwareListApp {
         if let Some(receiver) = &self.file_dialog_receiver {
             if let Ok(path) = receiver.try_recv() {
                 if let Some(path) = path {
-                    println!("Selected file: {:?} ... start processing", path);
                     match process_from_datafile(
                         &mut self.data_access,
                         path.to_string_lossy().into_owned(),
                     ) {
                         Ok(_) => {
-                            println!("Software list processed");
+                            self.message_dialog_options = MessageDialogOptions {
+                                show: true,
+                                message: "Software list processed".to_string(),
+                            };
                         }
                         Err(e) => {
-                            self.error_messages
-                                .push(format!("Error processing software list: {}", e.message));
+                            self.message_dialog_options = MessageDialogOptions {
+                                show: true,
+                                message: format!("Error processing software list: {}", e.message),
+                            };
                         }
                     }
                 }
