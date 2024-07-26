@@ -1,7 +1,7 @@
 use std::process::Command;
 
 use crate::archives::zip_util::extract_zip_file_to_tmp;
-use crate::configuration::emulators::get_emulators_by_system_id;
+use crate::configuration::emulators::Emulator;
 use crate::configuration::paths::read_paths;
 use crate::models::{Machine, Rom};
 
@@ -12,18 +12,9 @@ pub struct EmulatorRunnerError {
 pub fn run_with_emulator(
     machine: &Machine,
     system_id: String,
-    emulator_id: String,
+    emulator: &Emulator,
     rom: Option<Rom>,
 ) -> Result<(), EmulatorRunnerError> {
-    let emulators_for_system =
-        get_emulators_by_system_id(system_id.clone()).map_err(|_| EmulatorRunnerError {
-            message: format!("No emulators found for system {}", system_id),
-        })?;
-    let emulator = emulators_for_system
-        .iter()
-        .find(|e| e.id == emulator_id)
-        .unwrap();
-
     let paths = read_paths();
     let roms_path = paths.software_lists_roms_folder.clone();
     let file_path = get_machine_file_path(&machine, &system_id, &roms_path)?;

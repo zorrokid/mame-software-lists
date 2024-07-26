@@ -1,6 +1,6 @@
 pub const EMULATORS_CONFIG_PATH: &str = "configs/emulators.json";
 
-#[derive(serde::Deserialize, Debug, Clone)]
+#[derive(serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct Emulator {
     pub id: String,
     pub description: String,

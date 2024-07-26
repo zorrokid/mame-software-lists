@@ -3,25 +3,25 @@ use eframe::egui;
 
 #[derive(Clone)]
 pub struct EmulatorSelectionOptions {
-    pub selected_emulator_id: String,
+    pub selected_emulator: Option<Emulator>,
     pub emulators: Vec<Emulator>,
 }
 struct EmulatorsCombobox<'a> {
     ui: &'a mut egui::Ui,
     emulator_selection_options: EmulatorSelectionOptions,
-    on_emulator_id_changed: &'a mut dyn FnMut(String),
+    on_selected_emulator_changed: &'a mut dyn FnMut(Option<Emulator>),
 }
 
 impl<'a> EmulatorsCombobox<'a> {
     pub fn new(
         ui: &'a mut egui::Ui,
         emulator_selection_options: EmulatorSelectionOptions,
-        on_emulator_id_changed: &'a mut dyn FnMut(String),
+        on_selected_emulator_changed: &'a mut dyn FnMut(Option<Emulator>),
     ) -> Self {
         Self {
             ui,
             emulator_selection_options,
-            on_emulator_id_changed,
+            on_selected_emulator_changed,
         }
     }
 
@@ -29,25 +29,23 @@ impl<'a> EmulatorsCombobox<'a> {
         egui::ComboBox::from_label("Emulators")
             .selected_text(
                 self.emulator_selection_options
-                    .emulators
-                    .iter()
-                    .find(|s| s.id == self.emulator_selection_options.selected_emulator_id)
-                    .map(|s| s.description.clone())
-                    .unwrap_or_default(),
+                    .selected_emulator
+                    .clone()
+                    .map(|s| s.description)
+                    .unwrap_or("".to_string()),
             )
             .show_ui(self.ui, |ui| {
-                let selected_emulator_id =
-                    &mut self.emulator_selection_options.selected_emulator_id;
+                let selected_emulator = &mut self.emulator_selection_options.selected_emulator;
                 for emulator in self.emulator_selection_options.emulators.iter() {
                     if ui
                         .selectable_value(
-                            selected_emulator_id,
-                            emulator.id.clone(),
+                            selected_emulator,
+                            Some(emulator.clone()),
                             emulator.description.clone(),
                         )
                         .clicked()
                     {
-                        (self.on_emulator_id_changed)(selected_emulator_id.clone());
+                        (self.on_selected_emulator_changed)(selected_emulator.clone());
                     }
                 }
             });
@@ -57,7 +55,7 @@ impl<'a> EmulatorsCombobox<'a> {
 pub fn show_emulators_combobox(
     ui: &mut egui::Ui,
     emulator_selection_options: EmulatorSelectionOptions,
-    on_emulator_id_changed: &mut dyn FnMut(String),
+    on_selected_emulator_changed: &mut dyn FnMut(Option<Emulator>),
 ) {
-    EmulatorsCombobox::new(ui, emulator_selection_options, on_emulator_id_changed).show();
+    EmulatorsCombobox::new(ui, emulator_selection_options, on_selected_emulator_changed).show();
 }

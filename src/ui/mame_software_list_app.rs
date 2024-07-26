@@ -1,5 +1,5 @@
 use crate::{
-    configuration::{emulators::get_emulators_by_system_id, paths::Paths},
+    configuration::{emulators::get_emulators_by_system_id, emulators::Emulator, paths::Paths},
     data_access::data_access_provider::{DataAccessProvider, DataAccessTrait},
     emulators::emulator_runner::run_with_emulator,
     models::{Machine, Rom, SoftwareList, System},
@@ -85,7 +85,7 @@ impl MameSoftwareListApp {
                 machines: Vec::new(),
             },
             emulator_selection_options: EmulatorSelectionOptions {
-                selected_emulator_id: String::new(),
+                selected_emulator: None,
                 emulators: Vec::new(),
             },
         }
@@ -152,7 +152,7 @@ impl MameSoftwareListApp {
     fn start_button_clicked(&mut self) {
         if self.machine_selection_options.selected_machine.is_some()
             && self.system_selection_options.selected_system.is_some()
-            && self.emulator_selection_options.selected_emulator_id != ""
+            && self.emulator_selection_options.selected_emulator.is_some()
         {
             let system_name = self
                 .system_selection_options
@@ -165,11 +165,15 @@ impl MameSoftwareListApp {
                 .selected_machine
                 .clone()
                 .unwrap();
-            let emulator_id = self.emulator_selection_options.selected_emulator_id.clone();
+            let emulator = self
+                .emulator_selection_options
+                .selected_emulator
+                .clone()
+                .unwrap();
             let rom = self.rom_selection_options.selected_rom.clone();
 
             let handle =
-                thread::spawn(move || run_with_emulator(&machine, system_name, emulator_id, rom));
+                thread::spawn(move || run_with_emulator(&machine, system_name, &emulator, rom));
 
             match handle.join() {
                 Ok(_) => {}
@@ -309,8 +313,8 @@ impl MameSoftwareListApp {
         self.machine_selection_options.selected_machine = machine;
     }
 
-    fn on_emulator_id_changed(&mut self, emulator_id: String) {
-        self.emulator_selection_options.selected_emulator_id = emulator_id;
+    fn on_emulator_id_changed(&mut self, emulator: Option<Emulator>) {
+        self.emulator_selection_options.selected_emulator = emulator;
     }
 
     fn on_rom_selected(&mut self, selected_rom: Option<Rom>) {
