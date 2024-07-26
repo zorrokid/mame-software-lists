@@ -3,36 +3,21 @@ use eframe::egui;
 
 #[derive(Clone)]
 pub struct MachineSelectionOptions {
-    pub selected_machine_id: i32,
+    pub selected_machine: Option<Machine>,
     pub machines: Vec<Machine>,
-}
-
-impl MachineSelectionOptions {
-    pub fn new(selected_machine_id: i32, machines: Vec<Machine>) -> Self {
-        Self {
-            selected_machine_id,
-            machines,
-        }
-    }
-
-    pub fn get_selected_machine(&self) -> Option<&Machine> {
-        self.machines
-            .iter()
-            .find(|m| m.id == self.selected_machine_id)
-    }
 }
 
 pub struct MachinesList<'a> {
     ui: &'a mut egui::Ui,
     machine_selection_options: MachineSelectionOptions,
-    on_machine_selected: &'a mut dyn FnMut(i32),
+    on_machine_selected: &'a mut dyn FnMut(Option<Machine>),
 }
 
 impl<'a> MachinesList<'a> {
     pub fn new(
         ui: &'a mut egui::Ui,
         machine_selection_options: MachineSelectionOptions,
-        on_machine_selected: &'a mut dyn FnMut(i32),
+        on_machine_selected: &'a mut dyn FnMut(Option<Machine>),
     ) -> Self {
         Self {
             ui,
@@ -50,18 +35,18 @@ impl<'a> MachinesList<'a> {
                     ui.label("Year");
                     ui.end_row();
 
-                    let mut selected_machine_id =
-                        self.machine_selection_options.selected_machine_id.clone();
+                    let mut selected_machine =
+                        self.machine_selection_options.selected_machine.clone();
                     for machine in self.machine_selection_options.machines.iter() {
                         if ui
                             .selectable_value(
-                                &mut selected_machine_id,
-                                machine.id.clone(),
+                                &mut selected_machine,
+                                Some(machine.clone()),
                                 machine.description.clone(),
                             )
                             .clicked()
                         {
-                            (self.on_machine_selected)(selected_machine_id);
+                            (self.on_machine_selected)(selected_machine.clone());
                         }
                         ui.label(&machine.year.unwrap_or_default().to_string());
                         ui.end_row();
@@ -74,7 +59,7 @@ impl<'a> MachinesList<'a> {
 pub fn show_machines_list(
     ui: &mut egui::Ui,
     machine_selection_options: MachineSelectionOptions,
-    on_machine_selected: &mut dyn FnMut(i32),
+    on_machine_selected: &mut dyn FnMut(Option<Machine>),
 ) {
     MachinesList::new(ui, machine_selection_options, on_machine_selected).show();
 }

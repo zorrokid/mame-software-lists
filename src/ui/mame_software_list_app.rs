@@ -2,6 +2,7 @@ use crate::{
     configuration::{emulators::get_emulators_by_system_id, paths::Paths},
     data_access::data_access_provider::{DataAccessProvider, DataAccessTrait},
     emulators::emulator_runner::run_with_emulator,
+    models::Machine,
     software_lists::{
         process::process_from_datafile,
         software_list_file_scanner::{
@@ -74,7 +75,7 @@ impl MameSoftwareListApp {
                 software_lists: Vec::new(),
             },
             machine_selection_options: MachineSelectionOptions {
-                selected_machine_id: 0,
+                selected_machine: None,
                 machines: Vec::new(),
             },
             emulator_selection_options: EmulatorSelectionOptions {
@@ -143,7 +144,7 @@ impl MameSoftwareListApp {
     }
 
     fn start_button_clicked(&mut self) {
-        if self.machine_selection_options.selected_machine_id != 0
+        if self.machine_selection_options.selected_machine.is_some()
             && self.emulator_selection_options.selected_emulator_id != ""
         {
             let system_name = self
@@ -154,9 +155,9 @@ impl MameSoftwareListApp {
                 .clone();
             let machine = self
                 .machine_selection_options
-                .get_selected_machine()
-                .unwrap()
-                .clone();
+                .selected_machine
+                .clone()
+                .unwrap();
             let emulator_id = self.emulator_selection_options.selected_emulator_id.clone();
             let rom = self
                 .rom_selection_options
@@ -303,9 +304,11 @@ impl MameSoftwareListApp {
             .selected_software_list_id = software_list_id;
     }
 
-    fn on_machine_selection_changed(&mut self, machine_id: i32) {
-        self.fetch_roms_for_machine(machine_id);
-        self.machine_selection_options.selected_machine_id = machine_id;
+    fn on_machine_selection_changed(&mut self, machine: Option<Machine>) {
+        if let Some(machine) = machine.clone() {
+            self.fetch_roms_for_machine(machine.id);
+        }
+        self.machine_selection_options.selected_machine = machine;
     }
 
     fn on_emulator_id_changed(&mut self, emulator_id: String) {
