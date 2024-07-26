@@ -337,19 +337,20 @@ impl eframe::App for MameSoftwareListApp {
             ui.heading("Mame Software Lists");
             ui.label("This is a simple app to start software from Mame Software Lists");
 
-            let system_selection_options = self.system_selection_options.clone();
             ui.horizontal(|ui| {
-                show_systems_combobox(ui, system_selection_options, &mut |id| {
+                show_systems_combobox(ui, self.system_selection_options.clone(), &mut |id| {
                     self.on_system_id_changed(id)
                 });
 
-                let software_list_selection_options = self.software_list_selection_options.clone();
-                show_software_lists_combobox(ui, software_list_selection_options, &mut |id| {
-                    self.on_software_list_selection_changed(id);
-                });
+                show_software_lists_combobox(
+                    ui,
+                    self.software_list_selection_options.clone(),
+                    &mut |id| {
+                        self.on_software_list_selection_changed(id);
+                    },
+                );
 
-                let emulator_selection_options = self.emulator_selection_options.clone();
-                show_emulators_combobox(ui, emulator_selection_options, &mut |id| {
+                show_emulators_combobox(ui, self.emulator_selection_options.clone(), &mut |id| {
                     self.on_emulator_id_changed(id);
                 });
 
@@ -360,12 +361,12 @@ impl eframe::App for MameSoftwareListApp {
 
             ui.add_sized(ui.available_size(), |ui: &mut egui::Ui| {
                 ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
-                    let machine_selection_options = self.machine_selection_options.clone();
-                    show_machines_list(ui, machine_selection_options, &mut |machine_id| {
-                        self.on_machine_selection_changed(machine_id)
-                    });
-                    let rom_selection_options = self.rom_selection_options.clone();
-                    show_roms_list(ui, &rom_selection_options, &mut |rom_id| {
+                    show_machines_list(
+                        ui,
+                        self.machine_selection_options.clone(),
+                        &mut |machine_id| self.on_machine_selection_changed(machine_id),
+                    );
+                    show_roms_list(ui, &self.rom_selection_options.clone(), &mut |rom_id| {
                         self.on_rom_selected(rom_id)
                     });
                 })
