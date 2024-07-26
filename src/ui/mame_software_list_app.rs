@@ -2,7 +2,7 @@ use crate::{
     configuration::{emulators::get_emulators_by_system_id, paths::Paths},
     data_access::data_access_provider::{DataAccessProvider, DataAccessTrait},
     emulators::emulator_runner::run_with_emulator,
-    models::Machine,
+    models::{Machine, Rom},
     software_lists::{
         process::process_from_datafile,
         software_list_file_scanner::{
@@ -68,7 +68,10 @@ impl MameSoftwareListApp {
                 software_lists,
                 selected_software_list_id: 0,
             },
-            rom_selection_options: RomSelectionOptions::new(0, Vec::new()),
+            rom_selection_options: RomSelectionOptions {
+                selected_rom: None,
+                roms: Vec::new(),
+            },
             system_selection_options: SystemSelectionOptions::new(0, systems),
             software_list_selection_options: SoftwareListSelectionOptions {
                 selected_software_list_id: 0,
@@ -159,11 +162,7 @@ impl MameSoftwareListApp {
                 .clone()
                 .unwrap();
             let emulator_id = self.emulator_selection_options.selected_emulator_id.clone();
-            let rom = self
-                .rom_selection_options
-                .get_selected_rom()
-                .cloned()
-                .map(|r| r.clone());
+            let rom = self.rom_selection_options.selected_rom.clone();
 
             let handle =
                 thread::spawn(move || run_with_emulator(&machine, system_name, emulator_id, rom));
@@ -315,8 +314,8 @@ impl MameSoftwareListApp {
         self.emulator_selection_options.selected_emulator_id = emulator_id;
     }
 
-    fn on_rom_selected(&mut self, rom_id: i32) {
-        self.rom_selection_options.selected_rom_id = rom_id;
+    fn on_rom_selected(&mut self, selected_rom: Option<Rom>) {
+        self.rom_selection_options.selected_rom = selected_rom;
     }
 }
 
