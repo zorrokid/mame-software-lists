@@ -2,7 +2,7 @@ use crate::{
     configuration::{emulators::get_emulators_by_system_id, paths::Paths},
     data_access::data_access_provider::{DataAccessProvider, DataAccessTrait},
     emulators::emulator_runner::run_with_emulator,
-    models::{Machine, Rom, System},
+    models::{Machine, Rom, SoftwareList, System},
     software_lists::{
         process::process_from_datafile,
         software_list_file_scanner::{
@@ -77,7 +77,7 @@ impl MameSoftwareListApp {
                 systems,
             },
             software_list_selection_options: SoftwareListSelectionOptions {
-                selected_software_list_id: 0,
+                selected_software_list: None,
                 software_lists: Vec::new(),
             },
             machine_selection_options: MachineSelectionOptions {
@@ -295,10 +295,11 @@ impl MameSoftwareListApp {
         self.system_selection_options.selected_system = system;
     }
 
-    fn on_software_list_selection_changed(&mut self, software_list_id: i32) {
-        self.fetch_machines_for_software_list(software_list_id);
-        self.software_list_selection_options
-            .selected_software_list_id = software_list_id;
+    fn on_software_list_selection_changed(&mut self, software_list: Option<SoftwareList>) {
+        if let Some(software_list) = software_list.clone() {
+            self.fetch_machines_for_software_list(software_list.id);
+        }
+        self.software_list_selection_options.selected_software_list = software_list;
     }
 
     fn on_machine_selection_changed(&mut self, machine: Option<Machine>) {

@@ -3,26 +3,26 @@ use eframe::egui;
 
 #[derive(Clone)]
 pub struct SoftwareListSelectionOptions {
-    pub selected_software_list_id: i32,
+    pub selected_software_list: Option<SoftwareList>,
     pub software_lists: Vec<SoftwareList>,
 }
 
 pub struct SoftwareListsComboBox<'a> {
     ui: &'a mut egui::Ui,
     software_list_selection_options: SoftwareListSelectionOptions,
-    on_software_list_id_changed: &'a mut dyn FnMut(i32),
+    on_selected_software_list_changed: &'a mut dyn FnMut(Option<SoftwareList>),
 }
 
 impl<'a> SoftwareListsComboBox<'a> {
     pub fn new(
         ui: &'a mut egui::Ui,
         software_list_selection_options: SoftwareListSelectionOptions,
-        on_software_list_id_changed: &'a mut dyn FnMut(i32),
+        on_selected_software_list_changed: &'a mut dyn FnMut(Option<SoftwareList>),
     ) -> Self {
         Self {
             ui,
             software_list_selection_options,
-            on_software_list_id_changed,
+            on_selected_software_list_changed,
         }
     }
 
@@ -31,31 +31,26 @@ impl<'a> SoftwareListsComboBox<'a> {
             .selected_text(
                 &self
                     .software_list_selection_options
-                    .software_lists
-                    .iter()
-                    .find(|s| {
-                        s.id == self
-                            .software_list_selection_options
-                            .selected_software_list_id
-                    })
-                    .map(|s| s.name.clone())
-                    .unwrap_or_default(),
+                    .selected_software_list
+                    .clone()
+                    .map(|s| s.name)
+                    .unwrap_or("".to_string()),
             )
             .show_ui(self.ui, |ui| {
-                let mut selected_software_list_id = self
+                let mut selected_software_list = self
                     .software_list_selection_options
-                    .selected_software_list_id
+                    .selected_software_list
                     .clone();
                 for software_list in self.software_list_selection_options.software_lists.iter() {
                     if ui
                         .selectable_value(
-                            &mut selected_software_list_id,
-                            software_list.id.clone(),
+                            &mut selected_software_list,
+                            Some(software_list.clone()),
                             software_list.name.clone(),
                         )
                         .clicked()
                     {
-                        (self.on_software_list_id_changed)(selected_software_list_id);
+                        (self.on_selected_software_list_changed)(selected_software_list.clone());
                     }
                 }
             });
@@ -65,12 +60,12 @@ impl<'a> SoftwareListsComboBox<'a> {
 pub fn show_software_lists_combobox(
     ui: &mut egui::Ui,
     software_list_selection_options: SoftwareListSelectionOptions,
-    on_software_list_id_changed: &mut dyn FnMut(i32),
+    on_selected_software_list_changed: &mut dyn FnMut(Option<SoftwareList>),
 ) {
     let mut combobox = SoftwareListsComboBox::new(
         ui,
         software_list_selection_options,
-        on_software_list_id_changed,
+        on_selected_software_list_changed,
     );
     combobox.show();
 }
