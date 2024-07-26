@@ -2,7 +2,7 @@ use std::process::Command;
 
 use crate::archives::zip_util::extract_zip_file_to_tmp;
 use crate::configuration::emulators::Emulator;
-use crate::configuration::paths::read_paths;
+use crate::configuration::paths::Paths;
 use crate::models::{Machine, Rom};
 
 pub struct EmulatorRunnerError {
@@ -14,8 +14,8 @@ pub fn run_with_emulator(
     system_id: String,
     emulator: &Emulator,
     rom: Option<Rom>,
+    paths: &Paths,
 ) -> Result<(), EmulatorRunnerError> {
-    let paths = read_paths();
     let roms_path = paths.software_lists_roms_folder.clone();
     let file_path = get_machine_file_path(&machine, &system_id, &roms_path)?;
     let mut run_path = file_path.clone();

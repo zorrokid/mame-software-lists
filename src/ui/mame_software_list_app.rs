@@ -171,9 +171,11 @@ impl MameSoftwareListApp {
                 .clone()
                 .unwrap();
             let rom = self.rom_selection_options.selected_rom.clone();
+            let paths = self.paths.clone();
 
-            let handle =
-                thread::spawn(move || run_with_emulator(&machine, system_name, &emulator, rom));
+            let handle = thread::spawn(move || {
+                run_with_emulator(&machine, system_name, &emulator, rom, &paths)
+            });
 
             match handle.join() {
                 Ok(_) => {}
