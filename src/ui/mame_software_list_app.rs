@@ -274,6 +274,7 @@ impl MameSoftwareListApp {
                         path.to_string_lossy().into_owned(),
                     ) {
                         Ok(_) => {
+                            self.fetch_systems();
                             self.message_dialog_options = MessageDialogOptions {
                                 show: true,
                                 message: "Software list processed".to_string(),
