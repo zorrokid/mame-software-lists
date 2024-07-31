@@ -1,6 +1,8 @@
 use crate::models::Machine;
 use eframe::egui;
 
+const MAX_NAME_LENGTH: usize = 50;
+
 #[derive(Clone)]
 pub struct MachineSelectionOptions {
     pub selected_machine: Option<Machine>,
@@ -38,11 +40,16 @@ impl<'a> MachinesList<'a> {
                     let mut selected_machine =
                         self.machine_selection_options.selected_machine.clone();
                     for machine in self.machine_selection_options.machines.iter() {
+                        let truncated_name = if machine.description.len() > MAX_NAME_LENGTH {
+                            format!("{}...", &machine.description[..MAX_NAME_LENGTH])
+                        } else {
+                            machine.description.clone()
+                        };
                         if ui
                             .selectable_value(
                                 &mut selected_machine,
                                 Some(machine.clone()),
-                                machine.description.clone(),
+                                truncated_name,
                             )
                             .clicked()
                         {
