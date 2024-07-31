@@ -12,14 +12,10 @@ pub fn db_get_roms(
         .load(conn)
 }
 
-pub fn set_matched_roms(
-    conn: &mut SqliteConnection,
-    matched_rom_ids: &Vec<i32>,
-) -> Result<(), diesel::result::Error> {
-    // TODO update in transaction
-    for id in matched_rom_ids {
-        diesel::update(roms::table.find(id))
-            .set(roms::columns::have.eq(true))
+pub fn update(conn: &mut SqliteConnection, roms: &Vec<Rom>) -> Result<(), diesel::result::Error> {
+    for rom in roms {
+        diesel::update(roms::table.find(rom.id))
+            .set(rom)
             .execute(conn)?;
     }
     Ok(())

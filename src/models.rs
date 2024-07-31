@@ -24,7 +24,7 @@ pub struct Machine {
     pub name: String,
 }
 
-#[derive(Queryable, Selectable, Identifiable, Debug, PartialEq, Clone)]
+#[derive(Queryable, Selectable, Identifiable, Debug, PartialEq, Clone, AsChangeset)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Rom {
     pub id: i32,
@@ -32,8 +32,9 @@ pub struct Rom {
     pub size: i32,
     pub crc: String,
     pub sha1: String,
-    // TODO: should be Option
+    // TODO: remove have field, use available instead
     pub have: bool,
+    pub available: Option<bool>,
 }
 
 #[derive(Queryable, Selectable, Identifiable, Associations)]

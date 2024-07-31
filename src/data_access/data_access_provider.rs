@@ -1,9 +1,8 @@
 use crate::models::{Machine, Rom, SoftwareList, System};
-use crate::schema::{machines, roms, software_lists};
+use crate::schema::{machines, machines_roms, roms, software_lists};
 use crate::software_list_models::DataFile;
 use diesel::prelude::*;
 use diesel::SqliteConnection;
-use std::collections::HashMap;
 
 pub struct DataAccessError {
     pub message: String,
@@ -13,7 +12,7 @@ pub trait DataAccessTrait {
     fn fetch_software_list_roms(
         &mut self,
         software_list: &SoftwareList,
-    ) -> Result<HashMap<String, Rom>, DataAccessError>;
+    ) -> Result<Vec<Rom>, DataAccessError>;
     fn set_matched_roms(
         &mut self,
         software_list: &SoftwareList,
@@ -54,25 +53,17 @@ impl<'a> DataAccessTrait for DataAccessProvider {
     fn fetch_software_list_roms(
         &mut self,
         software_list: &SoftwareList,
-    ) -> Result<HashMap<String, Rom>, DataAccessError> {
-        let machines =
-            crate::database::machines::db_get_machines(&mut self.connection, &software_list)
-                .map_err(|e| DataAccessError {
-                    message: format!("Error fetching machines: {}", e),
-                })?;
-
-        let mut roms: HashMap<String, Rom> = HashMap::new();
-
-        for machine in machines {
-            let machine_roms = crate::database::roms::db_get_roms(&mut self.connection, &machine)
-                .map_err(|e| DataAccessError {
+    ) -> Result<Vec<Rom>, DataAccessError> {
+        let roms = software_lists::table
+            .inner_join(machines::table.on(machines::software_list_id.eq(software_lists::id)))
+            .inner_join(machines_roms::table.on(machines_roms::machine_id.eq(machines::id)))
+            .inner_join(roms::table.on(roms::id.eq(machines_roms::rom_id)))
+            .filter(software_lists::id.eq(software_list.id))
+            .select(roms::all_columns)
+            .load::<Rom>(&mut self.connection)
+            .map_err(|e| DataAccessError {
                 message: format!("Error fetching roms: {}", e),
             })?;
-            for rom in machine_roms {
-                roms.insert(rom.sha1.clone(), rom);
-            }
-        }
-
         Ok(roms)
     }
 
@@ -87,19 +78,27 @@ impl<'a> DataAccessTrait for DataAccessProvider {
                     message: format!("Error fetching software list roms: {}", e.message),
                 })?;
 
-        let matched_rom_ids = software_list_roms
-            .iter()
-            .filter(|(sha1, _)| checksums.contains(sha1))
-            .map(|(_, rom)| rom.id)
+        let software_list_roms_updated = software_list_roms
+            .into_iter()
+            .map(|x| {
+                let mut clone = x.clone();
+                clone.available = Some(checksums.contains(&x.sha1));
+                clone
+            })
             .collect();
 
-        crate::database::roms::set_matched_roms(&mut self.connection, &matched_rom_ids).map_err(
+        crate::database::roms::update(&mut self.connection, &software_list_roms_updated).map_err(
             |e| DataAccessError {
                 message: format!("Error setting matched roms: {}", e),
             },
         )?;
 
-        Ok(matched_rom_ids.len())
+        let available_roms_count = software_list_roms_updated
+            .iter()
+            .filter(|x| x.available.unwrap_or(false))
+            .count();
+
+        Ok(available_roms_count)
     }
 
     fn get_software_lists_for_system(

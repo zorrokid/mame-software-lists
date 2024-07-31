@@ -26,6 +26,7 @@ diesel::table! {
         crc -> Text,
         sha1 -> Text,
         have -> Bool,
+        available -> Nullable<Bool>,
     }
 }
 

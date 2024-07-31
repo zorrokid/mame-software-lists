@@ -49,7 +49,11 @@ impl<'a> RomsList<'a> {
                         {
                             (self.on_rom_selected)(selected_rom.clone());
                         }
-                        ui.label(if rom.have { "Yes" } else { "No" });
+                        ui.label(match rom.available {
+                            None => "Unknown".to_string(),
+                            Some(true) => "Yes".to_string(),
+                            Some(false) => "No".to_string(),
+                        });
                         ui.end_row();
                     }
                 });
