@@ -371,11 +371,13 @@ impl eframe::App for MameSoftwareListApp {
 
             ui.add_sized(ui.available_size(), |ui: &mut egui::Ui| {
                 ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
-                    show_machines_list(
-                        ui,
-                        self.machine_selection_options.clone(),
-                        &mut |machine_id| self.on_machine_selection_changed(machine_id),
-                    );
+                    ui.centered_and_justified(|ui| {
+                        show_machines_list(
+                            ui,
+                            self.machine_selection_options.clone(),
+                            &mut |machine_id| self.on_machine_selection_changed(machine_id),
+                        );
+                    });
                     ui.with_layout(egui::Layout::top_down(egui::Align::TOP), |ui| {
                         show_machine_panel(ui, &self.machine_selection_options.selected_machine);
                         show_roms_list(ui, &self.rom_selection_options.clone(), &mut |rom_id| {
