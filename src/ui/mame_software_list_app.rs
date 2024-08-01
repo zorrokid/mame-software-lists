@@ -16,6 +16,7 @@ use std::{path::PathBuf, sync::mpsc, thread};
 
 use super::{
     emulators_combobox::{show_emulators_combobox, EmulatorSelectionOptions},
+    machine_panel::show_machine_panel,
     machines_list::{show_machines_list, MachineSelectionOptions},
     message_dialog::{show_message_dialog, MessageDialogOptions},
     roms_list::{show_roms_list, RomSelectionOptions},
@@ -375,8 +376,11 @@ impl eframe::App for MameSoftwareListApp {
                         self.machine_selection_options.clone(),
                         &mut |machine_id| self.on_machine_selection_changed(machine_id),
                     );
-                    show_roms_list(ui, &self.rom_selection_options.clone(), &mut |rom_id| {
-                        self.on_rom_selected(rom_id)
+                    ui.with_layout(egui::Layout::top_down(egui::Align::TOP), |ui| {
+                        show_machine_panel(ui, &self.machine_selection_options.selected_machine);
+                        show_roms_list(ui, &self.rom_selection_options.clone(), &mut |rom_id| {
+                            self.on_rom_selected(rom_id)
+                        });
                     });
                 })
                 .response

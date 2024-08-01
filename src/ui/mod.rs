@@ -1,4 +1,5 @@
 pub mod emulators_combobox;
+pub mod machine_panel;
 pub mod machines_list;
 pub mod mame_software_list_app;
 pub mod message_dialog;

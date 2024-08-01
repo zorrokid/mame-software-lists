@@ -12,7 +12,7 @@ pub struct SoftwareList {
     pub system_id: Option<i32>,
 }
 
-#[derive(Queryable, Selectable, Identifiable, Associations, Debug, PartialEq, Clone)]
+#[derive(Queryable, Selectable, Identifiable, Associations, Debug, PartialEq, Clone, Default)]
 #[diesel(belongs_to(SoftwareList))]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Machine {
