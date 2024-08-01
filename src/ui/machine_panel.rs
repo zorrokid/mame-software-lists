@@ -18,14 +18,12 @@ impl<'a> MachinePanel<'a> {
             .id_source("machine_panel_scroll_area")
             .show(&mut self.ui, |ui| {
                 let selected_machine = self.selected_machine.clone().unwrap_or_default();
-                ui.label("Name: ");
-                ui.label(&selected_machine.name);
-                ui.label("Description");
-                ui.label(&selected_machine.description.clone());
-                ui.label("Year");
-                ui.label(&selected_machine.year.unwrap_or_default().to_string());
-                ui.label("Publisher");
-                ui.label(&selected_machine.publisher);
+                ui.heading(&selected_machine.description);
+                ui.label(format!(
+                    "Year: {}",
+                    &selected_machine.year.unwrap_or_default()
+                ));
+                ui.label(format!("Publisher: {}", &selected_machine.publisher));
             });
     }
 }
