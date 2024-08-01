@@ -1,11 +1,7 @@
 use crate::models::Rom;
 use eframe::egui;
 
-#[derive(Clone)]
-pub struct RomSelectionOptions {
-    pub selected_rom: Option<Rom>,
-    pub roms: Vec<Rom>,
-}
+pub type RomSelectionOptions = crate::ui::selection_options::SelectionOptions<Rom>;
 
 pub struct RomsList<'a> {
     ui: &'a mut egui::Ui,
@@ -30,13 +26,14 @@ impl<'a> RomsList<'a> {
         egui::ScrollArea::vertical()
             .id_source("roms_scroll_area")
             .show(self.ui, |ui| {
+                ui.heading("Files");
                 egui::Grid::new("roms_table").show(ui, |ui| {
                     ui.label("Name");
                     ui.label("Available");
                     ui.end_row();
 
-                    let roms = self.rom_selection_options.roms.clone();
-                    let mut selected_rom = self.rom_selection_options.selected_rom.clone();
+                    let roms = self.rom_selection_options.items.clone();
+                    let mut selected_rom = self.rom_selection_options.selected.clone();
 
                     for rom in roms.iter() {
                         if ui

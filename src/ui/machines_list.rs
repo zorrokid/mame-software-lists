@@ -1,13 +1,10 @@
 use crate::models::Machine;
+use crate::ui::selection_options::SelectionOptions;
 use eframe::egui;
 
 const MAX_NAME_LENGTH: usize = 50;
 
-#[derive(Clone)]
-pub struct MachineSelectionOptions {
-    pub selected_machine: Option<Machine>,
-    pub machines: Vec<Machine>,
-}
+pub type MachineSelectionOptions = SelectionOptions<Machine>;
 
 pub struct MachinesList<'a> {
     ui: &'a mut egui::Ui,
@@ -37,9 +34,8 @@ impl<'a> MachinesList<'a> {
                     ui.label("Year");
                     ui.end_row();
 
-                    let mut selected_machine =
-                        self.machine_selection_options.selected_machine.clone();
-                    for machine in self.machine_selection_options.machines.iter() {
+                    let mut selected_machine = self.machine_selection_options.selected.clone();
+                    for machine in self.machine_selection_options.items.iter() {
                         let truncated_name = if machine.description.len() > MAX_NAME_LENGTH {
                             format!("{}...", &machine.description[..MAX_NAME_LENGTH])
                         } else {

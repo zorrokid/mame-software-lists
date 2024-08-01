@@ -1,11 +1,8 @@
 use crate::models::System;
+use crate::ui::selection_options::SelectionOptions;
 use eframe::egui;
 
-#[derive(Clone)]
-pub struct SystemSelectionOptions {
-    pub selected_system: Option<System>,
-    pub systems: Vec<System>,
-}
+pub type SystemSelectionOptions = SelectionOptions<System>;
 
 pub struct SystemsComboBox<'a> {
     ui: &'a mut egui::Ui,
@@ -31,14 +28,14 @@ impl<'a> SystemsComboBox<'a> {
             .selected_text(
                 &self
                     .system_selection_options
-                    .selected_system
+                    .selected
                     .clone()
                     .map(|s| s.name)
                     .unwrap_or("".to_string()),
             )
             .show_ui(self.ui, |ui| {
-                let mut selected_system = self.system_selection_options.selected_system.clone();
-                for system in self.system_selection_options.systems.iter() {
+                let mut selected_system = self.system_selection_options.selected.clone();
+                for system in self.system_selection_options.items.iter() {
                     if ui
                         .selectable_value(
                             &mut selected_system,

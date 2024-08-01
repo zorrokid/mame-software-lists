@@ -1,11 +1,8 @@
 use crate::models::SoftwareList;
 use eframe::egui;
 
-#[derive(Clone)]
-pub struct SoftwareListSelectionOptions {
-    pub selected_software_list: Option<SoftwareList>,
-    pub software_lists: Vec<SoftwareList>,
-}
+pub type SoftwareListSelectionOptions =
+    crate::ui::selection_options::SelectionOptions<SoftwareList>;
 
 pub struct SoftwareListsComboBox<'a> {
     ui: &'a mut egui::Ui,
@@ -31,17 +28,15 @@ impl<'a> SoftwareListsComboBox<'a> {
             .selected_text(
                 &self
                     .software_list_selection_options
-                    .selected_software_list
+                    .selected
                     .clone()
                     .map(|s| s.name)
                     .unwrap_or("".to_string()),
             )
             .show_ui(self.ui, |ui| {
-                let mut selected_software_list = self
-                    .software_list_selection_options
-                    .selected_software_list
-                    .clone();
-                for software_list in self.software_list_selection_options.software_lists.iter() {
+                let mut selected_software_list =
+                    self.software_list_selection_options.selected.clone();
+                for software_list in self.software_list_selection_options.items.iter() {
                     if ui
                         .selectable_value(
                             &mut selected_software_list,

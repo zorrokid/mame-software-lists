@@ -70,20 +70,20 @@ impl MameSoftwareListApp {
                 selected_software_list_id: 0,
             },
             rom_selection_options: RomSelectionOptions {
-                selected_rom: None,
-                roms: Vec::new(),
+                selected: None,
+                items: Vec::new(),
             },
             system_selection_options: SystemSelectionOptions {
-                selected_system: None,
-                systems,
+                selected: None,
+                items: systems,
             },
             software_list_selection_options: SoftwareListSelectionOptions {
-                selected_software_list: None,
-                software_lists: Vec::new(),
+                selected: None,
+                items: Vec::new(),
             },
             machine_selection_options: MachineSelectionOptions {
-                selected_machine: None,
-                machines: Vec::new(),
+                selected: None,
+                items: Vec::new(),
             },
             emulator_selection_options: EmulatorSelectionOptions {
                 selected_emulator: None,
@@ -93,7 +93,7 @@ impl MameSoftwareListApp {
     }
 
     fn fetch_software_lists_for_system(&mut self, system_id: i32) {
-        self.software_list_selection_options.software_lists =
+        self.software_list_selection_options.items =
             match self.data_access.get_software_lists_for_system(system_id) {
                 Ok(s_lists) => s_lists,
                 Err(e) => {
@@ -104,7 +104,7 @@ impl MameSoftwareListApp {
     }
 
     fn fetch_machines_for_software_list(&mut self, s_list_id: i32) {
-        self.machine_selection_options.machines =
+        self.machine_selection_options.items =
             match self.data_access.get_machines_for_software_list(s_list_id) {
                 Ok(machines) => machines,
                 Err(e) => {
@@ -117,11 +117,11 @@ impl MameSoftwareListApp {
     fn fetch_roms_for_machine(&mut self, machine_id: i32) {
         let machine = self
             .machine_selection_options
-            .machines
+            .items
             .iter()
             .find(|m| m.id == machine_id)
             .unwrap();
-        self.rom_selection_options.roms = match self.data_access.get_roms_for_machine(machine) {
+        self.rom_selection_options.items = match self.data_access.get_roms_for_machine(machine) {
             Ok(roms) => roms,
             Err(e) => {
                 self.error_messages.push(e.message);
@@ -141,7 +141,7 @@ impl MameSoftwareListApp {
     }
 
     fn fetch_systems(&mut self) {
-        self.system_selection_options.systems = match self.data_access.get_systems() {
+        self.system_selection_options.items = match self.data_access.get_systems() {
             Ok(systems) => systems,
             Err(e) => {
                 self.error_messages.push(e.message);
@@ -151,27 +151,18 @@ impl MameSoftwareListApp {
     }
 
     fn start_button_clicked(&mut self) {
-        if self.machine_selection_options.selected_machine.is_some()
-            && self.system_selection_options.selected_system.is_some()
+        if self.machine_selection_options.selected.is_some()
+            && self.system_selection_options.selected.is_some()
             && self.emulator_selection_options.selected_emulator.is_some()
         {
-            let system_name = self
-                .system_selection_options
-                .selected_system
-                .clone()
-                .unwrap()
-                .name;
-            let machine = self
-                .machine_selection_options
-                .selected_machine
-                .clone()
-                .unwrap();
+            let system_name = self.system_selection_options.selected.clone().unwrap().name;
+            let machine = self.machine_selection_options.selected.clone().unwrap();
             let emulator = self
                 .emulator_selection_options
                 .selected_emulator
                 .clone()
                 .unwrap();
-            let rom = self.rom_selection_options.selected_rom.clone();
+            let rom = self.rom_selection_options.selected.clone();
             let paths = self.paths.clone();
 
             let handle = thread::spawn(move || {
@@ -300,21 +291,21 @@ impl MameSoftwareListApp {
             self.fetch_software_lists_for_system(system.id);
             self.fetch_emulators_for_system(system.name);
         }
-        self.system_selection_options.selected_system = system;
+        self.system_selection_options.selected = system;
     }
 
     fn on_software_list_selection_changed(&mut self, software_list: Option<SoftwareList>) {
         if let Some(software_list) = software_list.clone() {
             self.fetch_machines_for_software_list(software_list.id);
         }
-        self.software_list_selection_options.selected_software_list = software_list;
+        self.software_list_selection_options.selected = software_list;
     }
 
     fn on_machine_selection_changed(&mut self, machine: Option<Machine>) {
         if let Some(machine) = machine.clone() {
             self.fetch_roms_for_machine(machine.id);
         }
-        self.machine_selection_options.selected_machine = machine;
+        self.machine_selection_options.selected = machine;
     }
 
     fn on_emulator_id_changed(&mut self, emulator: Option<Emulator>) {
@@ -322,7 +313,7 @@ impl MameSoftwareListApp {
     }
 
     fn on_rom_selected(&mut self, selected_rom: Option<Rom>) {
-        self.rom_selection_options.selected_rom = selected_rom;
+        self.rom_selection_options.selected = selected_rom;
     }
 }
 
@@ -379,7 +370,7 @@ impl eframe::App for MameSoftwareListApp {
                         );
                     });
                     ui.with_layout(egui::Layout::top_down(egui::Align::TOP), |ui| {
-                        show_machine_panel(ui, &self.machine_selection_options.selected_machine);
+                        show_machine_panel(ui, &self.machine_selection_options.selected);
                         show_roms_list(ui, &self.rom_selection_options.clone(), &mut |rom_id| {
                             self.on_rom_selected(rom_id)
                         });
