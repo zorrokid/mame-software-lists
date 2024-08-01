@@ -9,6 +9,12 @@ pub struct Emulator {
     pub extract: bool,
 }
 
+impl std::fmt::Display for Emulator {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.description)
+    }
+}
+
 #[derive(serde::Deserialize, Debug)]
 pub struct EmulatorsBySystem {
     pub system: String,

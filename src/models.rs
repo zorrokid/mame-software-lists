@@ -13,6 +13,12 @@ pub struct SoftwareList {
     pub system_id: Option<i32>,
 }
 
+impl fmt::Display for SoftwareList {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
 #[derive(Queryable, Selectable, Identifiable, Associations, Debug, PartialEq, Clone, Default)]
 #[diesel(belongs_to(SoftwareList))]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]

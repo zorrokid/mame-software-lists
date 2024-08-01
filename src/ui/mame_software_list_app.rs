@@ -86,8 +86,8 @@ impl MameSoftwareListApp {
                 items: Vec::new(),
             },
             emulator_selection_options: EmulatorSelectionOptions {
-                selected_emulator: None,
-                emulators: Vec::new(),
+                selected: None,
+                items: Vec::new(),
             },
         }
     }
@@ -131,7 +131,7 @@ impl MameSoftwareListApp {
     }
 
     fn fetch_emulators_for_system(&mut self, system_name: String) {
-        self.emulator_selection_options.emulators = match get_emulators_by_system_id(system_name) {
+        self.emulator_selection_options.items = match get_emulators_by_system_id(system_name) {
             Ok(emulators) => emulators,
             Err(e) => {
                 self.error_messages.push(e.message.clone());
@@ -153,15 +153,11 @@ impl MameSoftwareListApp {
     fn start_button_clicked(&mut self) {
         if self.machine_selection_options.selected.is_some()
             && self.system_selection_options.selected.is_some()
-            && self.emulator_selection_options.selected_emulator.is_some()
+            && self.emulator_selection_options.selected.is_some()
         {
             let system_name = self.system_selection_options.selected.clone().unwrap().name;
             let machine = self.machine_selection_options.selected.clone().unwrap();
-            let emulator = self
-                .emulator_selection_options
-                .selected_emulator
-                .clone()
-                .unwrap();
+            let emulator = self.emulator_selection_options.selected.clone().unwrap();
             let rom = self.rom_selection_options.selected.clone();
             let paths = self.paths.clone();
 
@@ -309,7 +305,7 @@ impl MameSoftwareListApp {
     }
 
     fn on_emulator_id_changed(&mut self, emulator: Option<Emulator>) {
-        self.emulator_selection_options.selected_emulator = emulator;
+        self.emulator_selection_options.selected = emulator;
     }
 
     fn on_rom_selected(&mut self, selected_rom: Option<Rom>) {
