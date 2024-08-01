@@ -1,3 +1,4 @@
+pub mod combobox;
 pub mod emulators_combobox;
 pub mod machine_panel;
 pub mod machines_list;
