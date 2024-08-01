@@ -1,5 +1,6 @@
 use crate::schema::{machines, machines_roms, roms, software_lists, systems};
 use diesel::prelude::*;
+use std::fmt;
 
 #[derive(Queryable, Selectable, Identifiable, Debug, PartialEq, Clone)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
@@ -52,4 +53,10 @@ pub struct MachineRom {
 pub struct System {
     pub id: i32,
     pub name: String,
+}
+
+impl fmt::Display for System {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.name)
+    }
 }
