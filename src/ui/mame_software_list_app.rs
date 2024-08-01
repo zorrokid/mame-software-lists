@@ -346,9 +346,6 @@ impl eframe::App for MameSoftwareListApp {
             })
         });
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Mame Software Lists");
-            ui.label("This is a simple app to start software from Mame Software Lists");
-
             ui.horizontal(|ui| {
                 show_systems_combobox(ui, self.system_selection_options.clone(), &mut |id| {
                     self.on_system_id_changed(id)
