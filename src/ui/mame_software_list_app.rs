@@ -15,14 +15,16 @@ use rfd::FileDialog;
 use std::{path::PathBuf, sync::mpsc, thread};
 
 use super::{
-    emulators_combobox::{show_emulators_combobox, EmulatorSelectionOptions},
+    combobox::{
+        emulators_combobox::{show_emulators_combobox, EmulatorSelectionOptions},
+        software_lists_combobox::{show_software_lists_combobox, SoftwareListSelectionOptions},
+        systems_combobox::{show_systems_combobox, SystemSelectionOptions},
+    },
     machine_panel::show_machine_panel,
     machines_list::{show_machines_list, MachineSelectionOptions},
     message_dialog::{show_message_dialog, MessageDialogOptions},
     roms_list::{show_roms_list, RomSelectionOptions},
     scan_files_dialog::{show_scan_files_dialog, ScanFilesDialogOptions},
-    software_lists_combobox::{show_software_lists_combobox, SoftwareListSelectionOptions},
-    systems_combobox::{show_systems_combobox, SystemSelectionOptions},
 };
 
 pub struct MameSoftwareListApp {

@@ -1,5 +1,5 @@
+use super::combobox::ComboBox;
 use crate::models::System;
-use crate::ui::combobox::ComboBox;
 use crate::ui::selection_options::SelectionOptions;
 use eframe::egui;
 

@@ -1,5 +1,5 @@
+use super::combobox::ComboBox;
 use crate::models::SoftwareList;
-use crate::ui::combobox::ComboBox;
 use eframe::egui;
 
 pub type SoftwareListSelectionOptions =

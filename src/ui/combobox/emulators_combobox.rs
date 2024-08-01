@@ -1,5 +1,5 @@
+use super::combobox::ComboBox;
 use crate::configuration::emulators::Emulator;
-use crate::ui::combobox::ComboBox;
 use eframe::egui;
 
 pub type EmulatorSelectionOptions = crate::ui::selection_options::SelectionOptions<Emulator>;
