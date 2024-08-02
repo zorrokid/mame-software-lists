@@ -6,7 +6,7 @@ where
     T: Clone,
 {
     ui: &'a mut egui::Ui,
-    selection_options: SelectionOptions<T>,
+    selection_options: &'a SelectionOptions<T>,
     on_selected_changed: &'a mut dyn FnMut(Option<T>),
     label: &'a String,
 }
@@ -17,7 +17,7 @@ where
 {
     pub fn new(
         ui: &'a mut egui::Ui,
-        selection_options: SelectionOptions<T>,
+        selection_options: &'a SelectionOptions<T>,
         on_selected_changed: &'a mut dyn FnMut(Option<T>),
         label: &'a String,
     ) -> Self {
@@ -30,6 +30,7 @@ where
     }
 
     pub fn show(&mut self) {
+        let mut options = self.selection_options.clone();
         egui::ComboBox::from_label(self.label)
             .selected_text(
                 self.selection_options
@@ -38,16 +39,16 @@ where
                     .map_or("Select an item".to_string(), |item| item.to_string()),
             )
             .show_ui(self.ui, |ui| {
-                for item in self.selection_options.items.iter() {
+                for item in options.items.iter() {
                     if ui
                         .selectable_value(
-                            &mut self.selection_options.selected,
+                            &mut options.selected,
                             Some(item.clone()),
                             item.to_string(),
                         )
                         .clicked()
                     {
-                        (self.on_selected_changed)(self.selection_options.selected.clone());
+                        (self.on_selected_changed)(options.selected.clone());
                     }
                 }
             });
@@ -56,7 +57,7 @@ where
 
 pub fn show_combobox<T>(
     ui: &mut egui::Ui,
-    selection_options: SelectionOptions<T>,
+    selection_options: &SelectionOptions<T>,
     on_selected_changed: &mut dyn FnMut(Option<T>),
     label: &String,
 ) where

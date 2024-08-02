@@ -7,7 +7,7 @@ pub type SoftwareListSelectionOptions =
 
 pub fn show_software_lists_combobox(
     ui: &mut egui::Ui,
-    selection_options: SoftwareListSelectionOptions,
+    selection_options: &SoftwareListSelectionOptions,
     on_selected_changed: &mut dyn FnMut(Option<SoftwareList>),
 ) {
     let label = "Software lists".to_string();

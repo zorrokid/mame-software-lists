@@ -6,7 +6,7 @@ pub type EmulatorSelectionOptions = crate::ui::selection_options::SelectionOptio
 
 pub fn show_emulators_combobox(
     ui: &mut egui::Ui,
-    selection_options: EmulatorSelectionOptions,
+    selection_options: &EmulatorSelectionOptions,
     on_selected_changed: &mut dyn FnMut(Option<Emulator>),
 ) {
     let label = "Emulators".to_string();

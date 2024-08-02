@@ -83,6 +83,10 @@ impl UiState {
         }
     }
 
+    pub fn close_message_dialog(&mut self) {
+        self.message_dialog_options.show = false;
+    }
+
     pub fn update_matched_files(&mut self, result: SoftwareListScannerResult) {
         let matching_files_count = self
             .data_access

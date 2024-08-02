@@ -7,7 +7,7 @@ pub type SystemSelectionOptions = SelectionOptions<System>;
 
 pub fn show_systems_combobox(
     ui: &mut egui::Ui,
-    selection_options: SelectionOptions<System>,
+    selection_options: &SelectionOptions<System>,
     on_selected_changed: &mut dyn FnMut(Option<System>),
 ) {
     let label = "Systems".to_string();
