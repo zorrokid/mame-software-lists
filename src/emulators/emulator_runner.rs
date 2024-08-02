@@ -16,8 +16,7 @@ pub fn run_with_emulator(
     rom: Option<Rom>,
     paths: &Paths,
 ) -> Result<(), EmulatorRunnerError> {
-    let roms_path = paths.software_lists_roms_folder.clone();
-    let file_path = get_machine_file_path(&machine, &system_id, &roms_path)?;
+    let file_path = get_machine_file_path(&machine, &system_id, &paths.software_lists_roms_folder)?;
     let mut run_path = file_path.clone();
 
     if emulator.extract {
