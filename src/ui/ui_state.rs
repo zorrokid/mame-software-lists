@@ -80,63 +80,6 @@ impl UiState {
         }
     }
 
-    fn fetch_systems(&mut self) {
-        self.system_selection_options.items = match self.data_access.get_systems() {
-            Ok(systems) => systems,
-            Err(e) => {
-                self.add_message(e.message);
-                Vec::new()
-            }
-        }
-    }
-
-    fn fetch_software_lists_for_system(&mut self, system_id: i32) {
-        self.software_list_selection_options.items =
-            match self.data_access.get_software_lists_for_system(system_id) {
-                Ok(s_lists) => s_lists,
-                Err(e) => {
-                    self.add_message(e.message);
-                    Vec::new()
-                }
-            }
-    }
-
-    fn fetch_emulators_for_system(&mut self, system_name: String) {
-        self.emulator_selection_options.items = match get_emulators_by_system_id(system_name) {
-            Ok(emulators) => emulators,
-            Err(e) => {
-                self.add_message(e.message);
-                Vec::new()
-            }
-        }
-    }
-    fn fetch_machines_for_software_list(&mut self, s_list_id: i32) {
-        self.machine_selection_options.items =
-            match self.data_access.get_machines_for_software_list(s_list_id) {
-                Ok(machines) => machines,
-                Err(e) => {
-                    self.add_message(e.message);
-                    Vec::new()
-                }
-            }
-    }
-
-    fn fetch_roms_for_machine(&mut self, machine_id: i32) {
-        let machine = self
-            .machine_selection_options
-            .items
-            .iter()
-            .find(|m| m.id == machine_id)
-            .unwrap();
-        self.rom_selection_options.items = match self.data_access.get_roms_for_machine(machine) {
-            Ok(roms) => roms,
-            Err(e) => {
-                self.add_message(e.message);
-                Vec::new()
-            }
-        }
-    }
-
     pub fn update_matched_files(&mut self, result: SoftwareListScannerResult) {
         let matching_files_count = self
             .data_access
@@ -286,6 +229,8 @@ impl UiState {
         self.check_file_dialog_receiver();
     }
 
+    // private
+
     fn check_software_list_file_scanner_receiver(&mut self) {
         if let Some(receiver) = &self.software_list_file_scanner_receiver {
             if let Ok(result) = receiver.try_recv() {
@@ -309,6 +254,63 @@ impl UiState {
                     self.process_from_datafile(path);
                 }
                 self.file_dialog_receiver = None;
+            }
+        }
+    }
+
+    fn fetch_systems(&mut self) {
+        self.system_selection_options.items = match self.data_access.get_systems() {
+            Ok(systems) => systems,
+            Err(e) => {
+                self.add_message(e.message);
+                Vec::new()
+            }
+        }
+    }
+
+    fn fetch_software_lists_for_system(&mut self, system_id: i32) {
+        self.software_list_selection_options.items =
+            match self.data_access.get_software_lists_for_system(system_id) {
+                Ok(s_lists) => s_lists,
+                Err(e) => {
+                    self.add_message(e.message);
+                    Vec::new()
+                }
+            }
+    }
+
+    fn fetch_emulators_for_system(&mut self, system_name: String) {
+        self.emulator_selection_options.items = match get_emulators_by_system_id(system_name) {
+            Ok(emulators) => emulators,
+            Err(e) => {
+                self.add_message(e.message);
+                Vec::new()
+            }
+        }
+    }
+    fn fetch_machines_for_software_list(&mut self, s_list_id: i32) {
+        self.machine_selection_options.items =
+            match self.data_access.get_machines_for_software_list(s_list_id) {
+                Ok(machines) => machines,
+                Err(e) => {
+                    self.add_message(e.message);
+                    Vec::new()
+                }
+            }
+    }
+
+    fn fetch_roms_for_machine(&mut self, machine_id: i32) {
+        let machine = self
+            .machine_selection_options
+            .items
+            .iter()
+            .find(|m| m.id == machine_id)
+            .unwrap();
+        self.rom_selection_options.items = match self.data_access.get_roms_for_machine(machine) {
+            Ok(roms) => roms,
+            Err(e) => {
+                self.add_message(e.message);
+                Vec::new()
             }
         }
     }
