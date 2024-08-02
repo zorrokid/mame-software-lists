@@ -5,7 +5,10 @@ use crate::emulators::emulator_runner::run_with_emulator;
 use crate::models::System;
 use crate::models::{Machine, Rom, SoftwareList};
 use crate::software_lists::{
-    process::process_from_datafile, software_list_file_scanner::SoftwareListScannerResult,
+    process::process_from_datafile,
+    software_list_file_scanner::{
+        SoftwareListFileScanner, SoftwareListScannerError, SoftwareListScannerResult,
+    },
 };
 use crate::ui::combobox::{
     emulators_combobox::EmulatorSelectionOptions,
@@ -16,8 +19,8 @@ use crate::ui::machines_list::MachineSelectionOptions;
 use crate::ui::message_dialog::MessageDialogOptions;
 use crate::ui::roms_list::RomSelectionOptions;
 use crate::ui::scan_files_dialog::ScanFilesDialogOptions;
-use std::path::PathBuf;
-use std::thread;
+use rfd::FileDialog;
+use std::{path::PathBuf, sync::mpsc, thread};
 
 pub struct UiState {
     data_access: DataAccessProvider,
@@ -30,6 +33,9 @@ pub struct UiState {
     pub console_messages: Vec<String>,
     pub scan_files_dialog_options: ScanFilesDialogOptions,
     paths: Paths,
+    file_dialog_receiver: Option<mpsc::Receiver<Option<PathBuf>>>,
+    software_list_file_scanner_receiver:
+        Option<mpsc::Receiver<Option<Result<SoftwareListScannerResult, SoftwareListScannerError>>>>,
 }
 
 impl UiState {
@@ -69,6 +75,8 @@ impl UiState {
             },
             console_messages: Vec::new(),
             paths,
+            file_dialog_receiver: None,
+            software_list_file_scanner_receiver: None,
         }
     }
 
@@ -224,6 +232,83 @@ impl UiState {
             Ok(_) => {}
             Err(e) => {
                 self.add_message(format!("Error starting emulator: {:?}", e));
+            }
+        }
+    }
+
+    pub fn add_software_list_data_file(&mut self) {
+        let dat_file_folder = self.paths.software_lists_data_files_folder.clone();
+        let (sender, receiver) = mpsc::channel();
+
+        thread::spawn(move || {
+            // NOTE: set_directory for Linux seems to be working for GTK only, see set_directory comments
+            if let Some(path) = FileDialog::new().set_directory(dat_file_folder).pick_file() {
+                sender.send(Some(path)).unwrap();
+            } else {
+                sender.send(None).unwrap();
+            }
+        });
+
+        self.file_dialog_receiver = Some(receiver);
+    }
+
+    pub fn scan_available_files(&mut self) {
+        self.scan_files_dialog_options.show = true;
+    }
+
+    pub fn close_available_files_dialog(&mut self, s_list_id: Option<i32>) {
+        self.scan_files_dialog_options.show = false;
+        if let Some(id) = s_list_id {
+            self.scan_files_dialog_options.selected_software_list_id = id;
+
+            let rom_path: PathBuf = PathBuf::from(&self.paths.software_lists_roms_folder);
+            let selected_software_list = self
+                .scan_files_dialog_options
+                .software_lists
+                .iter()
+                .find(|s| s.id == id)
+                .unwrap()
+                .clone();
+
+            let (sender, receiver) = mpsc::channel();
+            thread::spawn(move || {
+                let mut scanner = SoftwareListFileScanner::new(rom_path);
+                let result = scanner.scan_files(&selected_software_list);
+                sender.send(Some(result)).unwrap();
+            });
+
+            self.software_list_file_scanner_receiver = Some(receiver);
+        }
+    }
+
+    pub fn on_update(&mut self) {
+        self.check_software_list_file_scanner_receiver();
+        self.check_file_dialog_receiver();
+    }
+
+    fn check_software_list_file_scanner_receiver(&mut self) {
+        if let Some(receiver) = &self.software_list_file_scanner_receiver {
+            if let Ok(result) = receiver.try_recv() {
+                if let Some(result) = result {
+                    match result {
+                        Ok(scan_result) => {
+                            self.update_matched_files(scan_result);
+                        }
+                        Err(e) => self.add_message(format!("Error scanning files: {}", e.message)),
+                    }
+                }
+                self.software_list_file_scanner_receiver = None;
+            }
+        }
+    }
+
+    fn check_file_dialog_receiver(&mut self) {
+        if let Some(receiver) = &self.file_dialog_receiver {
+            if let Ok(path) = receiver.try_recv() {
+                if let Some(path) = path {
+                    self.process_from_datafile(path);
+                }
+                self.file_dialog_receiver = None;
             }
         }
     }

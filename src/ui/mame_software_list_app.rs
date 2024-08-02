@@ -1,12 +1,4 @@
-use crate::{
-    configuration::paths::Paths,
-    software_lists::software_list_file_scanner::{
-        SoftwareListFileScanner, SoftwareListScannerError, SoftwareListScannerResult,
-    },
-};
 use eframe::egui;
-use rfd::FileDialog;
-use std::{path::PathBuf, sync::mpsc, thread};
 
 use super::{
     combobox::{
@@ -23,97 +15,13 @@ use super::{
 };
 
 pub struct MameSoftwareListApp {
-    paths: Paths,
-    file_dialog_receiver: Option<mpsc::Receiver<Option<PathBuf>>>,
-    software_list_file_scanner_receiver:
-        Option<mpsc::Receiver<Option<Result<SoftwareListScannerResult, SoftwareListScannerError>>>>,
     ui_state: UiState,
 }
 
 impl MameSoftwareListApp {
-    pub fn new(paths: Paths) -> Self {
+    pub fn new() -> Self {
         Self {
             ui_state: UiState::new(),
-            paths,
-            file_dialog_receiver: None,
-            software_list_file_scanner_receiver: None,
-        }
-    }
-
-    fn add_software_list_data_file(&mut self) {
-        let dat_file_folder = self.paths.software_lists_data_files_folder.clone();
-        let (sender, receiver) = mpsc::channel();
-
-        thread::spawn(move || {
-            // NOTE: set_directory for Linux seems to be working for GTK only, see set_directory comments
-            if let Some(path) = FileDialog::new().set_directory(dat_file_folder).pick_file() {
-                sender.send(Some(path)).unwrap();
-            } else {
-                sender.send(None).unwrap();
-            }
-        });
-
-        self.file_dialog_receiver = Some(receiver);
-    }
-
-    fn scan_available_files(&mut self) {
-        self.ui_state.scan_files_dialog_options.show = true;
-    }
-
-    fn close_available_files_dialog(&mut self, s_list_id: Option<i32>) {
-        self.ui_state.scan_files_dialog_options.show = false;
-        if let Some(id) = s_list_id {
-            self.ui_state
-                .scan_files_dialog_options
-                .selected_software_list_id = id;
-
-            let rom_path: PathBuf = PathBuf::from(&self.paths.software_lists_roms_folder);
-            let selected_software_list = self
-                .ui_state
-                .scan_files_dialog_options
-                .software_lists
-                .iter()
-                .find(|s| s.id == id)
-                .unwrap()
-                .clone();
-
-            let (sender, receiver) = mpsc::channel();
-            thread::spawn(move || {
-                let mut scanner = SoftwareListFileScanner::new(rom_path);
-                let result = scanner.scan_files(&selected_software_list);
-                sender.send(Some(result)).unwrap();
-            });
-
-            self.software_list_file_scanner_receiver = Some(receiver);
-        }
-    }
-
-    fn check_software_list_file_scanner_receiver(&mut self) {
-        if let Some(receiver) = &self.software_list_file_scanner_receiver {
-            if let Ok(result) = receiver.try_recv() {
-                if let Some(result) = result {
-                    match result {
-                        Ok(scan_result) => {
-                            self.ui_state.update_matched_files(scan_result);
-                        }
-                        Err(e) => self
-                            .ui_state
-                            .add_message(format!("Error scanning files: {}", e.message)),
-                    }
-                }
-                self.software_list_file_scanner_receiver = None;
-            }
-        }
-    }
-
-    fn check_file_dialog_receiver(&mut self) {
-        if let Some(receiver) = &self.file_dialog_receiver {
-            if let Ok(path) = receiver.try_recv() {
-                if let Some(path) = path {
-                    self.ui_state.process_from_datafile(path);
-                }
-                self.file_dialog_receiver = None;
-            }
         }
     }
 }
@@ -124,13 +32,13 @@ impl eframe::App for MameSoftwareListApp {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("Add Software Lists data file").clicked() {
-                        self.add_software_list_data_file();
+                        self.ui_state.add_software_list_data_file();
                     }
                     if ui
                         .button("Scan available files for a software list")
                         .clicked()
                     {
-                        self.scan_available_files();
+                        self.ui_state.scan_available_files();
                     }
                     if ui.button("Quit").clicked() {
                         std::process::exit(0);
@@ -202,7 +110,7 @@ impl eframe::App for MameSoftwareListApp {
                     .selected_software_list_id;
                 show_scan_files_dialog(
                     ctx,
-                    |id: Option<i32>| self.close_available_files_dialog(id),
+                    |id: Option<i32>| self.ui_state.close_available_files_dialog(id),
                     &cloned_software_lists,
                     selected_software_list_id,
                 );
@@ -218,8 +126,7 @@ impl eframe::App for MameSoftwareListApp {
                 )
             }
 
-            self.check_file_dialog_receiver();
-            self.check_software_list_file_scanner_receiver();
+            self.ui_state.on_update();
         });
 
         egui::TopBottomPanel::bottom("message_console")
