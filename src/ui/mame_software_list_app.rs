@@ -219,8 +219,7 @@ impl MameSoftwareListApp {
         if let Some(id) = s_list_id {
             self.scan_files_dialog_options.selected_software_list_id = id;
 
-            let rom_path: PathBuf =
-                PathBuf::from(self.paths.software_lists_roms_folder.clone()).clone();
+            let rom_path: PathBuf = PathBuf::from(&self.paths.software_lists_roms_folder);
             let selected_software_list = self
                 .scan_files_dialog_options
                 .software_lists
