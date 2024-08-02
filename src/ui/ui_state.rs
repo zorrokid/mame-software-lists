@@ -1,24 +1,27 @@
-use crate::configuration::emulators::{get_emulators_by_system_id, Emulator};
-use crate::configuration::paths::{read_paths, Paths};
+use super::{
+    combobox::{
+        emulators_combobox::EmulatorSelectionOptions,
+        software_lists_combobox::SoftwareListSelectionOptions,
+        systems_combobox::SystemSelectionOptions,
+    },
+    machines_list::MachineSelectionOptions,
+    message_dialog::MessageDialogOptions,
+    roms_list::RomSelectionOptions,
+    scan_files_dialog::ScanFilesDialogOptions,
+};
+use crate::configuration::{
+    emulators::{get_emulators_by_system_id, Emulator},
+    paths::{read_paths, Paths},
+};
 use crate::data_access::data_access_provider::{DataAccessProvider, DataAccessTrait};
 use crate::emulators::emulator_runner::run_with_emulator;
-use crate::models::System;
-use crate::models::{Machine, Rom, SoftwareList};
+use crate::models::{Machine, Rom, SoftwareList, System};
 use crate::software_lists::{
     process::process_from_datafile,
     software_list_file_scanner::{
         SoftwareListFileScanner, SoftwareListScannerError, SoftwareListScannerResult,
     },
 };
-use crate::ui::combobox::{
-    emulators_combobox::EmulatorSelectionOptions,
-    software_lists_combobox::SoftwareListSelectionOptions,
-    systems_combobox::SystemSelectionOptions,
-};
-use crate::ui::machines_list::MachineSelectionOptions;
-use crate::ui::message_dialog::MessageDialogOptions;
-use crate::ui::roms_list::RomSelectionOptions;
-use crate::ui::scan_files_dialog::ScanFilesDialogOptions;
 use rfd::FileDialog;
 use std::{path::PathBuf, sync::mpsc, thread};
 
