@@ -30,7 +30,7 @@ use super::{
 pub struct MameSoftwareListApp {
     paths: Paths,
     file_dialog_receiver: Option<mpsc::Receiver<Option<PathBuf>>>,
-    error_messages: Vec<String>,
+    console_messages: Vec<String>,
     data_access: DataAccessProvider,
     software_list_file_scanner_receiver:
         Option<mpsc::Receiver<Option<Result<SoftwareListScannerResult, SoftwareListScannerError>>>>,
@@ -59,7 +59,7 @@ impl MameSoftwareListApp {
         Self {
             paths,
             file_dialog_receiver: None,
-            error_messages: Vec::new(),
+            console_messages: Vec::new(),
             data_access,
             software_list_file_scanner_receiver: None,
             message_dialog_options: MessageDialogOptions {
@@ -94,12 +94,20 @@ impl MameSoftwareListApp {
         }
     }
 
+    fn add_message(&mut self, message: String) {
+        self.message_dialog_options = MessageDialogOptions {
+            show: true,
+            message: message.clone(),
+        };
+        self.console_messages.push(message);
+    }
+
     fn fetch_software_lists_for_system(&mut self, system_id: i32) {
         self.software_list_selection_options.items =
             match self.data_access.get_software_lists_for_system(system_id) {
                 Ok(s_lists) => s_lists,
                 Err(e) => {
-                    self.error_messages.push(e.message);
+                    self.add_message(e.message);
                     Vec::new()
                 }
             }
@@ -110,7 +118,7 @@ impl MameSoftwareListApp {
             match self.data_access.get_machines_for_software_list(s_list_id) {
                 Ok(machines) => machines,
                 Err(e) => {
-                    self.error_messages.push(e.message);
+                    self.add_message(e.message);
                     Vec::new()
                 }
             }
@@ -126,7 +134,7 @@ impl MameSoftwareListApp {
         self.rom_selection_options.items = match self.data_access.get_roms_for_machine(machine) {
             Ok(roms) => roms,
             Err(e) => {
-                self.error_messages.push(e.message);
+                self.add_message(e.message);
                 Vec::new()
             }
         }
@@ -136,7 +144,7 @@ impl MameSoftwareListApp {
         self.emulator_selection_options.items = match get_emulators_by_system_id(system_name) {
             Ok(emulators) => emulators,
             Err(e) => {
-                self.error_messages.push(e.message.clone());
+                self.add_message(e.message);
                 Vec::new()
             }
         }
@@ -146,33 +154,43 @@ impl MameSoftwareListApp {
         self.system_selection_options.items = match self.data_access.get_systems() {
             Ok(systems) => systems,
             Err(e) => {
-                self.error_messages.push(e.message);
+                self.add_message(e.message);
                 Vec::new()
             }
         }
     }
 
     fn start_button_clicked(&mut self) {
-        if self.machine_selection_options.selected.is_some()
-            && self.system_selection_options.selected.is_some()
-            && self.emulator_selection_options.selected.is_some()
-        {
-            let system_name = self.system_selection_options.selected.clone().unwrap().name;
-            let machine = self.machine_selection_options.selected.clone().unwrap();
-            let emulator = self.emulator_selection_options.selected.clone().unwrap();
-            let rom = self.rom_selection_options.selected.clone();
-            let paths = self.paths.clone();
+        if self.system_selection_options.selected.is_none() {
+            self.add_message("Please select a system".to_string());
+            return;
+        }
+        if self.machine_selection_options.selected.is_none() {
+            self.add_message("Please select a machine".to_string());
+            return;
+        }
+        if self.emulator_selection_options.selected.is_none() {
+            self.add_message("Please select an emulator".to_string());
+            return;
+        }
+        let system_name = self.system_selection_options.selected.clone().unwrap().name;
+        let machine = self.machine_selection_options.selected.clone().unwrap();
+        let emulator = self.emulator_selection_options.selected.clone().unwrap();
+        let rom = self.rom_selection_options.selected.clone();
+        let paths = self.paths.clone();
 
-            let handle = thread::spawn(move || {
-                run_with_emulator(&machine, system_name, &emulator, rom, &paths)
-            });
+        self.console_messages.push(format!(
+            "Starting emulator {} with {}",
+            emulator.description, machine.name
+        ));
 
-            match handle.join() {
-                Ok(_) => {}
-                Err(e) => {
-                    self.error_messages
-                        .push(format!("Error starting emulator: {:?}", e));
-                }
+        let handle =
+            thread::spawn(move || run_with_emulator(&machine, system_name, &emulator, rom, &paths));
+
+        match handle.join() {
+            Ok(_) => {}
+            Err(e) => {
+                self.add_message(format!("Error starting emulator: {:?}", e));
             }
         }
     }
@@ -227,14 +245,11 @@ impl MameSoftwareListApp {
             .data_access
             .set_matched_roms(&result.software_list, &result.scan_result.found_checksums)
             .map_err(|e| {
-                self.error_messages.push(e.message);
+                self.add_message(e.message);
             })
             .unwrap();
 
-        self.message_dialog_options = MessageDialogOptions {
-            show: true,
-            message: format!("Matching files count: {:?}", matching_files_count),
-        };
+        self.add_message(format!("Matching files count: {:?}", matching_files_count));
     }
 
     fn check_software_list_file_scanner_receiver(&mut self) {
@@ -245,9 +260,7 @@ impl MameSoftwareListApp {
                         Ok(scan_result) => {
                             self.update_matched_files(scan_result);
                         }
-                        Err(e) => {
-                            self.error_messages.push(e.message);
-                        }
+                        Err(e) => self.add_message(format!("Error scanning files: {}", e.message)),
                     }
                 }
                 self.software_list_file_scanner_receiver = None;
@@ -265,17 +278,10 @@ impl MameSoftwareListApp {
                     ) {
                         Ok(_) => {
                             self.fetch_systems();
-                            self.message_dialog_options = MessageDialogOptions {
-                                show: true,
-                                message: "Software list processed".to_string(),
-                            };
+                            self.add_message("Software list processed".to_string());
                         }
-                        Err(e) => {
-                            self.message_dialog_options = MessageDialogOptions {
-                                show: true,
-                                message: format!("Error processing software list: {}", e.message),
-                            };
-                        }
+                        Err(e) => self
+                            .add_message(format!("Error processing software list: {}", e.message)),
                     }
                 }
                 self.file_dialog_receiver = None;
@@ -399,13 +405,15 @@ impl eframe::App for MameSoftwareListApp {
             self.check_software_list_file_scanner_receiver();
         });
 
-        egui::TopBottomPanel::bottom("error_console").show(ctx, |ui| {
-            ui.heading("Error Console");
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                for error in &self.error_messages {
-                    ui.label(error);
-                }
+        egui::TopBottomPanel::bottom("message_console")
+            .exact_height(80.0)
+            .show(ctx, |ui| {
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    let reverse_messages = self.console_messages.iter().rev();
+                    for message in reverse_messages {
+                        ui.label(message);
+                    }
+                });
             });
-        });
     }
 }
