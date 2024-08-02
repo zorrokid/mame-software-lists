@@ -1,5 +1,7 @@
 use crate::configuration::emulators::{get_emulators_by_system_id, Emulator};
+use crate::configuration::paths::{read_paths, Paths};
 use crate::data_access::data_access_provider::{DataAccessProvider, DataAccessTrait};
+use crate::emulators::emulator_runner::run_with_emulator;
 use crate::models::System;
 use crate::models::{Machine, Rom, SoftwareList};
 use crate::software_lists::{
@@ -15,6 +17,7 @@ use crate::ui::message_dialog::MessageDialogOptions;
 use crate::ui::roms_list::RomSelectionOptions;
 use crate::ui::scan_files_dialog::ScanFilesDialogOptions;
 use std::path::PathBuf;
+use std::thread;
 
 pub struct UiState {
     data_access: DataAccessProvider,
@@ -26,6 +29,7 @@ pub struct UiState {
     pub message_dialog_options: MessageDialogOptions,
     pub console_messages: Vec<String>,
     pub scan_files_dialog_options: ScanFilesDialogOptions,
+    paths: Paths,
 }
 
 impl UiState {
@@ -41,6 +45,8 @@ impl UiState {
             .get_software_lists()
             .map_err(|e| println!("Failed getting software lists: {}", e.message))
             .unwrap();
+
+        let paths = read_paths();
 
         Self {
             data_access,
@@ -62,6 +68,7 @@ impl UiState {
                 selected_software_list_id: 0,
             },
             console_messages: Vec::new(),
+            paths,
         }
     }
 
@@ -184,5 +191,40 @@ impl UiState {
 
     pub fn on_rom_selected(&mut self, selected_rom: Option<Rom>) {
         self.rom_selection_options.selected = selected_rom;
+    }
+
+    pub fn start_button_clicked(&mut self) {
+        if self.system_selection_options.selected.is_none() {
+            self.add_message("Please select a system".to_string());
+            return;
+        }
+        if self.machine_selection_options.selected.is_none() {
+            self.add_message("Please select a machine".to_string());
+            return;
+        }
+        if self.emulator_selection_options.selected.is_none() {
+            self.add_message("Please select an emulator".to_string());
+            return;
+        }
+        let system_name = self.system_selection_options.selected.clone().unwrap().name;
+        let machine = self.machine_selection_options.selected.clone().unwrap();
+        let emulator = self.emulator_selection_options.selected.clone().unwrap();
+        let rom = self.rom_selection_options.selected.clone();
+        let paths = self.paths.clone();
+
+        self.add_console_message(format!(
+            "Starting emulator {} with {}",
+            emulator.description, machine.name
+        ));
+
+        let handle =
+            thread::spawn(move || run_with_emulator(&machine, system_name, &emulator, rom, &paths));
+
+        match handle.join() {
+            Ok(_) => {}
+            Err(e) => {
+                self.add_message(format!("Error starting emulator: {:?}", e));
+            }
+        }
     }
 }

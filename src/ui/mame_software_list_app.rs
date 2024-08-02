@@ -1,6 +1,5 @@
 use crate::{
     configuration::paths::Paths,
-    emulators::emulator_runner::run_with_emulator,
     software_lists::software_list_file_scanner::{
         SoftwareListFileScanner, SoftwareListScannerError, SoftwareListScannerResult,
     },
@@ -38,61 +37,6 @@ impl MameSoftwareListApp {
             paths,
             file_dialog_receiver: None,
             software_list_file_scanner_receiver: None,
-        }
-    }
-
-    fn start_button_clicked(&mut self) {
-        if self.ui_state.system_selection_options.selected.is_none() {
-            self.ui_state
-                .add_message("Please select a system".to_string());
-            return;
-        }
-        if self.ui_state.machine_selection_options.selected.is_none() {
-            self.ui_state
-                .add_message("Please select a machine".to_string());
-            return;
-        }
-        if self.ui_state.emulator_selection_options.selected.is_none() {
-            self.ui_state
-                .add_message("Please select an emulator".to_string());
-            return;
-        }
-        let system_name = self
-            .ui_state
-            .system_selection_options
-            .selected
-            .clone()
-            .unwrap()
-            .name;
-        let machine = self
-            .ui_state
-            .machine_selection_options
-            .selected
-            .clone()
-            .unwrap();
-        let emulator = self
-            .ui_state
-            .emulator_selection_options
-            .selected
-            .clone()
-            .unwrap();
-        let rom = self.ui_state.rom_selection_options.selected.clone();
-        let paths = self.paths.clone();
-
-        self.ui_state.add_console_message(format!(
-            "Starting emulator {} with {}",
-            emulator.description, machine.name
-        ));
-
-        let handle =
-            thread::spawn(move || run_with_emulator(&machine, system_name, &emulator, rom, &paths));
-
-        match handle.join() {
-            Ok(_) => {}
-            Err(e) => {
-                self.ui_state
-                    .add_message(format!("Error starting emulator: {:?}", e));
-            }
         }
     }
 
@@ -219,7 +163,7 @@ impl eframe::App for MameSoftwareListApp {
                 );
 
                 if ui.button("Start").clicked() {
-                    self.start_button_clicked();
+                    self.ui_state.start_button_clicked();
                 }
             });
 
