@@ -1,13 +1,8 @@
 use crate::{
-    configuration::{emulators::get_emulators_by_system_id, emulators::Emulator, paths::Paths},
-    data_access::data_access_provider::{DataAccessProvider, DataAccessTrait},
+    configuration::paths::Paths,
     emulators::emulator_runner::run_with_emulator,
-    models::{Machine, Rom, SoftwareList, System},
-    software_lists::{
-        process::process_from_datafile,
-        software_list_file_scanner::{
-            SoftwareListFileScanner, SoftwareListScannerError, SoftwareListScannerResult,
-        },
+    software_lists::software_list_file_scanner::{
+        SoftwareListFileScanner, SoftwareListScannerError, SoftwareListScannerResult,
     },
 };
 use eframe::egui;
@@ -16,158 +11,75 @@ use std::{path::PathBuf, sync::mpsc, thread};
 
 use super::{
     combobox::{
-        emulators_combobox::{show_emulators_combobox, EmulatorSelectionOptions},
-        software_lists_combobox::{show_software_lists_combobox, SoftwareListSelectionOptions},
-        systems_combobox::{show_systems_combobox, SystemSelectionOptions},
+        emulators_combobox::show_emulators_combobox,
+        software_lists_combobox::show_software_lists_combobox,
+        systems_combobox::show_systems_combobox,
     },
     machine_panel::show_machine_panel,
-    machines_list::{show_machines_list, MachineSelectionOptions},
-    message_dialog::{show_message_dialog, MessageDialogOptions},
-    roms_list::{show_roms_list, RomSelectionOptions},
-    scan_files_dialog::{show_scan_files_dialog, ScanFilesDialogOptions},
+    machines_list::show_machines_list,
+    message_dialog::show_message_dialog,
+    roms_list::show_roms_list,
+    scan_files_dialog::show_scan_files_dialog,
+    ui_state::UiState,
 };
 
 pub struct MameSoftwareListApp {
     paths: Paths,
     file_dialog_receiver: Option<mpsc::Receiver<Option<PathBuf>>>,
-    console_messages: Vec<String>,
-    data_access: DataAccessProvider,
     software_list_file_scanner_receiver:
         Option<mpsc::Receiver<Option<Result<SoftwareListScannerResult, SoftwareListScannerError>>>>,
-    message_dialog_options: MessageDialogOptions,
-    scan_files_dialog_options: ScanFilesDialogOptions,
-    rom_selection_options: RomSelectionOptions,
-    system_selection_options: SystemSelectionOptions,
-    software_list_selection_options: SoftwareListSelectionOptions,
-    machine_selection_options: MachineSelectionOptions,
-    emulator_selection_options: EmulatorSelectionOptions,
+    ui_state: UiState,
 }
 
 impl MameSoftwareListApp {
     pub fn new(paths: Paths) -> Self {
-        let mut data_access = DataAccessProvider::new();
-        let systems = data_access
-            .get_systems()
-            .map_err(|e| println!("Failed getting systems: {}", e.message))
-            .unwrap();
-
-        let software_lists = data_access
-            .get_software_lists()
-            .map_err(|e| println!("Failed getting software lists: {}", e.message))
-            .unwrap();
-
         Self {
+            ui_state: UiState::new(),
             paths,
             file_dialog_receiver: None,
-            console_messages: Vec::new(),
-            data_access,
             software_list_file_scanner_receiver: None,
-            message_dialog_options: MessageDialogOptions {
-                show: false,
-                message: String::new(),
-            },
-            scan_files_dialog_options: ScanFilesDialogOptions {
-                show: false,
-                software_lists,
-                selected_software_list_id: 0,
-            },
-            rom_selection_options: RomSelectionOptions::default(),
-            system_selection_options: SystemSelectionOptions {
-                selected: None,
-                items: systems,
-            },
-            software_list_selection_options: SoftwareListSelectionOptions::default(),
-            machine_selection_options: MachineSelectionOptions::default(),
-            emulator_selection_options: EmulatorSelectionOptions::default(),
-        }
-    }
-
-    fn add_message(&mut self, message: String) {
-        self.message_dialog_options = MessageDialogOptions {
-            show: true,
-            message: message.clone(),
-        };
-        self.console_messages.push(message);
-    }
-
-    fn fetch_software_lists_for_system(&mut self, system_id: i32) {
-        self.software_list_selection_options.items =
-            match self.data_access.get_software_lists_for_system(system_id) {
-                Ok(s_lists) => s_lists,
-                Err(e) => {
-                    self.add_message(e.message);
-                    Vec::new()
-                }
-            }
-    }
-
-    fn fetch_machines_for_software_list(&mut self, s_list_id: i32) {
-        self.machine_selection_options.items =
-            match self.data_access.get_machines_for_software_list(s_list_id) {
-                Ok(machines) => machines,
-                Err(e) => {
-                    self.add_message(e.message);
-                    Vec::new()
-                }
-            }
-    }
-
-    fn fetch_roms_for_machine(&mut self, machine_id: i32) {
-        let machine = self
-            .machine_selection_options
-            .items
-            .iter()
-            .find(|m| m.id == machine_id)
-            .unwrap();
-        self.rom_selection_options.items = match self.data_access.get_roms_for_machine(machine) {
-            Ok(roms) => roms,
-            Err(e) => {
-                self.add_message(e.message);
-                Vec::new()
-            }
-        }
-    }
-
-    fn fetch_emulators_for_system(&mut self, system_name: String) {
-        self.emulator_selection_options.items = match get_emulators_by_system_id(system_name) {
-            Ok(emulators) => emulators,
-            Err(e) => {
-                self.add_message(e.message);
-                Vec::new()
-            }
-        }
-    }
-
-    fn fetch_systems(&mut self) {
-        self.system_selection_options.items = match self.data_access.get_systems() {
-            Ok(systems) => systems,
-            Err(e) => {
-                self.add_message(e.message);
-                Vec::new()
-            }
         }
     }
 
     fn start_button_clicked(&mut self) {
-        if self.system_selection_options.selected.is_none() {
-            self.add_message("Please select a system".to_string());
+        if self.ui_state.system_selection_options.selected.is_none() {
+            self.ui_state
+                .add_message("Please select a system".to_string());
             return;
         }
-        if self.machine_selection_options.selected.is_none() {
-            self.add_message("Please select a machine".to_string());
+        if self.ui_state.machine_selection_options.selected.is_none() {
+            self.ui_state
+                .add_message("Please select a machine".to_string());
             return;
         }
-        if self.emulator_selection_options.selected.is_none() {
-            self.add_message("Please select an emulator".to_string());
+        if self.ui_state.emulator_selection_options.selected.is_none() {
+            self.ui_state
+                .add_message("Please select an emulator".to_string());
             return;
         }
-        let system_name = self.system_selection_options.selected.clone().unwrap().name;
-        let machine = self.machine_selection_options.selected.clone().unwrap();
-        let emulator = self.emulator_selection_options.selected.clone().unwrap();
-        let rom = self.rom_selection_options.selected.clone();
+        let system_name = self
+            .ui_state
+            .system_selection_options
+            .selected
+            .clone()
+            .unwrap()
+            .name;
+        let machine = self
+            .ui_state
+            .machine_selection_options
+            .selected
+            .clone()
+            .unwrap();
+        let emulator = self
+            .ui_state
+            .emulator_selection_options
+            .selected
+            .clone()
+            .unwrap();
+        let rom = self.ui_state.rom_selection_options.selected.clone();
         let paths = self.paths.clone();
 
-        self.console_messages.push(format!(
+        self.ui_state.add_console_message(format!(
             "Starting emulator {} with {}",
             emulator.description, machine.name
         ));
@@ -178,7 +90,8 @@ impl MameSoftwareListApp {
         match handle.join() {
             Ok(_) => {}
             Err(e) => {
-                self.add_message(format!("Error starting emulator: {:?}", e));
+                self.ui_state
+                    .add_message(format!("Error starting emulator: {:?}", e));
             }
         }
     }
@@ -200,16 +113,19 @@ impl MameSoftwareListApp {
     }
 
     fn scan_available_files(&mut self) {
-        self.scan_files_dialog_options.show = true;
+        self.ui_state.scan_files_dialog_options.show = true;
     }
 
     fn close_available_files_dialog(&mut self, s_list_id: Option<i32>) {
-        self.scan_files_dialog_options.show = false;
+        self.ui_state.scan_files_dialog_options.show = false;
         if let Some(id) = s_list_id {
-            self.scan_files_dialog_options.selected_software_list_id = id;
+            self.ui_state
+                .scan_files_dialog_options
+                .selected_software_list_id = id;
 
             let rom_path: PathBuf = PathBuf::from(&self.paths.software_lists_roms_folder);
             let selected_software_list = self
+                .ui_state
                 .scan_files_dialog_options
                 .software_lists
                 .iter()
@@ -228,27 +144,17 @@ impl MameSoftwareListApp {
         }
     }
 
-    fn update_matched_files(&mut self, result: SoftwareListScannerResult) {
-        let matching_files_count = self
-            .data_access
-            .set_matched_roms(&result.software_list, &result.scan_result.found_checksums)
-            .map_err(|e| {
-                self.add_message(e.message);
-            })
-            .unwrap();
-
-        self.add_message(format!("Matching files count: {:?}", matching_files_count));
-    }
-
     fn check_software_list_file_scanner_receiver(&mut self) {
         if let Some(receiver) = &self.software_list_file_scanner_receiver {
             if let Ok(result) = receiver.try_recv() {
                 if let Some(result) = result {
                     match result {
                         Ok(scan_result) => {
-                            self.update_matched_files(scan_result);
+                            self.ui_state.update_matched_files(scan_result);
                         }
-                        Err(e) => self.add_message(format!("Error scanning files: {}", e.message)),
+                        Err(e) => self
+                            .ui_state
+                            .add_message(format!("Error scanning files: {}", e.message)),
                     }
                 }
                 self.software_list_file_scanner_receiver = None;
@@ -260,52 +166,11 @@ impl MameSoftwareListApp {
         if let Some(receiver) = &self.file_dialog_receiver {
             if let Ok(path) = receiver.try_recv() {
                 if let Some(path) = path {
-                    match process_from_datafile(
-                        &mut self.data_access,
-                        path.to_string_lossy().into_owned(),
-                    ) {
-                        Ok(_) => {
-                            self.fetch_systems();
-                            self.add_message("Software list processed".to_string());
-                        }
-                        Err(e) => self
-                            .add_message(format!("Error processing software list: {}", e.message)),
-                    }
+                    self.ui_state.process_from_datafile(path);
                 }
                 self.file_dialog_receiver = None;
-                self.fetch_systems();
             }
         }
-    }
-
-    fn on_system_id_changed(&mut self, system: Option<System>) {
-        if let Some(system) = system.clone() {
-            self.fetch_software_lists_for_system(system.id);
-            self.fetch_emulators_for_system(system.name);
-        }
-        self.system_selection_options.selected = system;
-    }
-
-    fn on_software_list_selection_changed(&mut self, software_list: Option<SoftwareList>) {
-        if let Some(software_list) = software_list.clone() {
-            self.fetch_machines_for_software_list(software_list.id);
-        }
-        self.software_list_selection_options.selected = software_list;
-    }
-
-    fn on_machine_selection_changed(&mut self, machine: Option<Machine>) {
-        if let Some(machine) = machine.clone() {
-            self.fetch_roms_for_machine(machine.id);
-        }
-        self.machine_selection_options.selected = machine;
-    }
-
-    fn on_emulator_id_changed(&mut self, emulator: Option<Emulator>) {
-        self.emulator_selection_options.selected = emulator;
-    }
-
-    fn on_rom_selected(&mut self, selected_rom: Option<Rom>) {
-        self.rom_selection_options.selected = selected_rom;
     }
 }
 
@@ -331,21 +196,27 @@ impl eframe::App for MameSoftwareListApp {
         });
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
-                show_systems_combobox(ui, self.system_selection_options.clone(), &mut |id| {
-                    self.on_system_id_changed(id)
-                });
+                show_systems_combobox(
+                    ui,
+                    self.ui_state.system_selection_options.clone(),
+                    &mut |id| self.ui_state.on_system_changed(id),
+                );
 
                 show_software_lists_combobox(
                     ui,
-                    self.software_list_selection_options.clone(),
+                    self.ui_state.software_list_selection_options.clone(),
                     &mut |id| {
-                        self.on_software_list_selection_changed(id);
+                        self.ui_state.on_software_list_selection_changed(id);
                     },
                 );
 
-                show_emulators_combobox(ui, self.emulator_selection_options.clone(), &mut |id| {
-                    self.on_emulator_id_changed(id);
-                });
+                show_emulators_combobox(
+                    ui,
+                    self.ui_state.emulator_selection_options.clone(),
+                    &mut |id| {
+                        self.ui_state.on_emulator_id_changed(id);
+                    },
+                );
 
                 if ui.button("Start").clicked() {
                     self.start_button_clicked();
@@ -357,24 +228,34 @@ impl eframe::App for MameSoftwareListApp {
                     ui.centered_and_justified(|ui| {
                         show_machines_list(
                             ui,
-                            self.machine_selection_options.clone(),
-                            &mut |machine_id| self.on_machine_selection_changed(machine_id),
+                            self.ui_state.machine_selection_options.clone(),
+                            &mut |machine_id| {
+                                self.ui_state.on_machine_selection_changed(machine_id)
+                            },
                         );
                     });
                     ui.with_layout(egui::Layout::top_down(egui::Align::TOP), |ui| {
-                        show_machine_panel(ui, &self.machine_selection_options.selected);
-                        show_roms_list(ui, &self.rom_selection_options.clone(), &mut |rom_id| {
-                            self.on_rom_selected(rom_id)
-                        });
+                        show_machine_panel(ui, &self.ui_state.machine_selection_options.selected);
+                        show_roms_list(
+                            ui,
+                            &self.ui_state.rom_selection_options.clone(),
+                            &mut |rom_id| self.ui_state.on_rom_selected(rom_id),
+                        );
                     });
                 })
                 .response
             });
 
-            if self.scan_files_dialog_options.show {
-                let cloned_software_lists = self.scan_files_dialog_options.software_lists.clone();
-                let selected_software_list_id =
-                    self.scan_files_dialog_options.selected_software_list_id;
+            if self.ui_state.scan_files_dialog_options.show {
+                let cloned_software_lists = self
+                    .ui_state
+                    .scan_files_dialog_options
+                    .software_lists
+                    .clone();
+                let selected_software_list_id = self
+                    .ui_state
+                    .scan_files_dialog_options
+                    .selected_software_list_id;
                 show_scan_files_dialog(
                     ctx,
                     |id: Option<i32>| self.close_available_files_dialog(id),
@@ -383,10 +264,14 @@ impl eframe::App for MameSoftwareListApp {
                 );
             }
 
-            if self.message_dialog_options.show {
-                show_message_dialog(ctx, &self.message_dialog_options.message, &mut || {
-                    self.message_dialog_options.show = false;
-                })
+            if self.ui_state.message_dialog_options.show {
+                show_message_dialog(
+                    ctx,
+                    &self.ui_state.message_dialog_options.message,
+                    &mut || {
+                        self.ui_state.message_dialog_options.show = false;
+                    },
+                )
             }
 
             self.check_file_dialog_receiver();
@@ -397,7 +282,7 @@ impl eframe::App for MameSoftwareListApp {
             .exact_height(80.0)
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
-                    let reverse_messages = self.console_messages.iter().rev();
+                    let reverse_messages = self.ui_state.console_messages.iter().rev();
                     for message in reverse_messages {
                         ui.label(message);
                     }
