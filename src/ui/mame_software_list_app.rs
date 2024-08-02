@@ -71,26 +71,14 @@ impl MameSoftwareListApp {
                 software_lists,
                 selected_software_list_id: 0,
             },
-            rom_selection_options: RomSelectionOptions {
-                selected: None,
-                items: Vec::new(),
-            },
+            rom_selection_options: RomSelectionOptions::default(),
             system_selection_options: SystemSelectionOptions {
                 selected: None,
                 items: systems,
             },
-            software_list_selection_options: SoftwareListSelectionOptions {
-                selected: None,
-                items: Vec::new(),
-            },
-            machine_selection_options: MachineSelectionOptions {
-                selected: None,
-                items: Vec::new(),
-            },
-            emulator_selection_options: EmulatorSelectionOptions {
-                selected: None,
-                items: Vec::new(),
-            },
+            software_list_selection_options: SoftwareListSelectionOptions::default(),
+            machine_selection_options: MachineSelectionOptions::default(),
+            emulator_selection_options: EmulatorSelectionOptions::default(),
         }
     }
 
@@ -200,6 +188,7 @@ impl MameSoftwareListApp {
         let (sender, receiver) = mpsc::channel();
 
         thread::spawn(move || {
+            // NOTE: set_directory for Linux seems to be working for GTK only, see set_directory comments
             if let Some(path) = FileDialog::new().set_directory(dat_file_folder).pick_file() {
                 sender.send(Some(path)).unwrap();
             } else {
