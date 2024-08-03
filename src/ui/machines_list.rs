@@ -58,11 +58,3 @@ impl<'a> MachinesList<'a> {
             });
     }
 }
-
-pub fn show_machines_list(
-    ui: &mut egui::Ui,
-    machine_selection_options: &MachineSelectionOptions,
-    on_machine_selected: &mut dyn FnMut(Option<Machine>),
-) {
-    MachinesList::new(ui, machine_selection_options, on_machine_selected).show();
-}

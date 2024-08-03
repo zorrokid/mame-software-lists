@@ -1,18 +1,13 @@
 use eframe::egui;
 
 use super::{
-    combobox::{
-        emulators_combobox::show_emulators_combobox,
-        software_lists_combobox::show_software_lists_combobox,
-        systems_combobox::show_systems_combobox,
-    },
-    machine_panel::show_machine_panel,
-    machines_list::show_machines_list,
-    message_dialog::show_message_dialog,
-    roms_list::show_roms_list,
-    scan_files_dialog::show_scan_files_dialog,
-    ui_state::UiState,
+    combobox::ComboBox, machine_panel::show_machine_panel, machines_list::MachinesList,
+    message_dialog::show_message_dialog, roms_list::show_roms_list,
+    scan_files_dialog::show_scan_files_dialog, ui_state::UiState,
 };
+
+use crate::configuration::emulators::Emulator;
+use crate::models::{SoftwareList, System};
 
 pub struct MameSoftwareListApp {
     ui_state: UiState,
@@ -48,28 +43,37 @@ impl eframe::App for MameSoftwareListApp {
         });
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
-                show_systems_combobox(
+                let label = "Systems".to_string();
+                ComboBox::<System>::new(
                     ui,
                     &self.ui_state.system_selection_options.clone(),
                     &mut |system| self.ui_state.on_system_changed(system),
-                );
+                    &label,
+                )
+                .show();
 
-                show_software_lists_combobox(
+                let label = "Software lists".to_string();
+                ComboBox::<SoftwareList>::new(
                     ui,
                     &self.ui_state.software_list_selection_options.clone(),
                     &mut |software_list| {
                         self.ui_state
                             .on_software_list_selection_changed(software_list);
                     },
-                );
+                    &label,
+                )
+                .show();
 
-                show_emulators_combobox(
+                let label = "Emulators".to_string();
+                ComboBox::<Emulator>::new(
                     ui,
                     &self.ui_state.emulator_selection_options.clone(),
                     &mut |emulator| {
                         self.ui_state.on_emulator_changed(emulator);
                     },
-                );
+                    &label,
+                )
+                .show();
 
                 if ui.button("Start").clicked() {
                     self.ui_state.start_button_clicked();
@@ -79,13 +83,14 @@ impl eframe::App for MameSoftwareListApp {
             ui.add_sized(ui.available_size(), |ui: &mut egui::Ui| {
                 ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
                     ui.centered_and_justified(|ui| {
-                        show_machines_list(
+                        MachinesList::new(
                             ui,
                             &self.ui_state.machine_selection_options.clone(),
                             &mut |machine_id| {
                                 self.ui_state.on_machine_selection_changed(machine_id)
                             },
-                        );
+                        )
+                        .show();
                     });
                     ui.with_layout(egui::Layout::top_down(egui::Align::TOP), |ui| {
                         show_machine_panel(ui, &self.ui_state.machine_selection_options.selected);

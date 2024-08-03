@@ -1,13 +1,7 @@
 use super::{
-    combobox::{
-        emulators_combobox::EmulatorSelectionOptions,
-        software_lists_combobox::SoftwareListSelectionOptions,
-        systems_combobox::SystemSelectionOptions,
-    },
-    machines_list::MachineSelectionOptions,
-    message_dialog::MessageDialogOptions,
-    roms_list::RomSelectionOptions,
-    scan_files_dialog::ScanFilesDialogOptions,
+    machines_list::MachineSelectionOptions, message_dialog::MessageDialogOptions,
+    roms_list::RomSelectionOptions, scan_files_dialog::ScanFilesDialogOptions,
+    selection_options::SelectionOptions,
 };
 use crate::configuration::{
     emulators::{get_emulators_by_system_id, Emulator},
@@ -27,10 +21,10 @@ use std::{path::PathBuf, sync::mpsc, thread};
 
 pub struct UiState {
     data_access: DataAccessProvider,
-    pub system_selection_options: SystemSelectionOptions,
-    pub software_list_selection_options: SoftwareListSelectionOptions,
+    pub system_selection_options: SelectionOptions<System>,
+    pub software_list_selection_options: SelectionOptions<SoftwareList>,
     pub machine_selection_options: MachineSelectionOptions,
-    pub emulator_selection_options: EmulatorSelectionOptions,
+    pub emulator_selection_options: SelectionOptions<Emulator>,
     pub rom_selection_options: RomSelectionOptions,
     pub message_dialog_options: MessageDialogOptions,
     pub console_messages: Vec<String>,
@@ -59,13 +53,13 @@ impl UiState {
 
         Self {
             data_access,
-            system_selection_options: SystemSelectionOptions {
+            system_selection_options: SelectionOptions::<System> {
                 selected: None,
                 items: systems,
             },
-            software_list_selection_options: SoftwareListSelectionOptions::default(),
+            software_list_selection_options: SelectionOptions::<SoftwareList>::default(),
             machine_selection_options: MachineSelectionOptions::default(),
-            emulator_selection_options: EmulatorSelectionOptions::default(),
+            emulator_selection_options: SelectionOptions::<Emulator>::default(),
             rom_selection_options: RomSelectionOptions::default(),
             message_dialog_options: MessageDialogOptions {
                 show: false,
