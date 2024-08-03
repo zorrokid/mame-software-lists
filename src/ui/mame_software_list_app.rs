@@ -51,19 +51,25 @@ impl eframe::App for MameSoftwareListApp {
                 show_systems_combobox(
                     ui,
                     &self.ui_state.system_selection_options.clone(),
-                    &mut |id| self.ui_state.on_system_changed(id),
+                    &mut |system| self.ui_state.on_system_changed(system),
                 );
 
-                let software_list_selection_options =
-                    self.ui_state.software_list_selection_options.clone();
-                show_software_lists_combobox(ui, &software_list_selection_options, &mut |id| {
-                    self.ui_state.on_software_list_selection_changed(id);
-                });
+                show_software_lists_combobox(
+                    ui,
+                    &self.ui_state.software_list_selection_options.clone(),
+                    &mut |software_list| {
+                        self.ui_state
+                            .on_software_list_selection_changed(software_list);
+                    },
+                );
 
-                let emulator_selection_options = self.ui_state.emulator_selection_options.clone();
-                show_emulators_combobox(ui, &emulator_selection_options, &mut |id| {
-                    self.ui_state.on_emulator_id_changed(id);
-                });
+                show_emulators_combobox(
+                    ui,
+                    &self.ui_state.emulator_selection_options.clone(),
+                    &mut |emulator| {
+                        self.ui_state.on_emulator_changed(emulator);
+                    },
+                );
 
                 if ui.button("Start").clicked() {
                     self.ui_state.start_button_clicked();
@@ -73,18 +79,21 @@ impl eframe::App for MameSoftwareListApp {
             ui.add_sized(ui.available_size(), |ui: &mut egui::Ui| {
                 ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
                     ui.centered_and_justified(|ui| {
-                        let machine_selection_options =
-                            self.ui_state.machine_selection_options.clone();
-                        show_machines_list(ui, &machine_selection_options, &mut |machine_id| {
-                            self.ui_state.on_machine_selection_changed(machine_id)
-                        });
+                        show_machines_list(
+                            ui,
+                            &self.ui_state.machine_selection_options.clone(),
+                            &mut |machine_id| {
+                                self.ui_state.on_machine_selection_changed(machine_id)
+                            },
+                        );
                     });
                     ui.with_layout(egui::Layout::top_down(egui::Align::TOP), |ui| {
                         show_machine_panel(ui, &self.ui_state.machine_selection_options.selected);
-                        let rom_selection_options = self.ui_state.rom_selection_options.clone();
-                        show_roms_list(ui, &rom_selection_options, &mut |rom_id| {
-                            self.ui_state.on_rom_selected(rom_id)
-                        });
+                        show_roms_list(
+                            ui,
+                            &self.ui_state.rom_selection_options.clone(),
+                            &mut |rom_id| self.ui_state.on_rom_selected(rom_id),
+                        );
                     });
                 })
                 .response

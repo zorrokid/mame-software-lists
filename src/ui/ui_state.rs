@@ -143,7 +143,7 @@ impl UiState {
         self.machine_selection_options.selected = machine;
     }
 
-    pub fn on_emulator_id_changed(&mut self, emulator: Option<Emulator>) {
+    pub fn on_emulator_changed(&mut self, emulator: Option<Emulator>) {
         self.emulator_selection_options.selected = emulator;
     }
 
