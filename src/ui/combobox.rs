@@ -54,15 +54,3 @@ where
             });
     }
 }
-
-pub fn show_combobox<T>(
-    ui: &mut egui::Ui,
-    selection_options: &SelectionOptions<T>,
-    on_selected_changed: &mut dyn FnMut(Option<T>),
-    label: &String,
-) where
-    T: Clone + std::fmt::Display + std::cmp::PartialEq,
-{
-    let mut combobox = ComboBox::<T>::new(ui, selection_options, on_selected_changed, label);
-    combobox.show();
-}

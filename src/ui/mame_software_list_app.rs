@@ -1,9 +1,9 @@
 use eframe::egui;
 
 use super::{
-    combobox::ComboBox, machine_panel::show_machine_panel, machines_list::MachinesList,
-    message_dialog::show_message_dialog, roms_list::show_roms_list,
-    scan_files_dialog::show_scan_files_dialog, ui_state::UiState,
+    combobox::ComboBox, machine_panel::MachinePanel, machines_list::MachinesList,
+    message_dialog::MessageDialog, roms_list::RomsList, scan_files_dialog::ScanFilesDialog,
+    ui_state::UiState,
 };
 
 use crate::configuration::emulators::Emulator;
@@ -93,12 +93,14 @@ impl eframe::App for MameSoftwareListApp {
                         .show();
                     });
                     ui.with_layout(egui::Layout::top_down(egui::Align::TOP), |ui| {
-                        show_machine_panel(ui, &self.ui_state.machine_selection_options.selected);
-                        show_roms_list(
+                        MachinePanel::new(ui, &self.ui_state.machine_selection_options.selected)
+                            .show();
+                        RomsList::new(
                             ui,
                             &self.ui_state.rom_selection_options.clone(),
                             &mut |rom_id| self.ui_state.on_rom_selected(rom_id),
-                        );
+                        )
+                        .show();
                     });
                 })
                 .response
@@ -114,19 +116,21 @@ impl eframe::App for MameSoftwareListApp {
                     .ui_state
                     .scan_files_dialog_options
                     .selected_software_list_id;
-                show_scan_files_dialog(
-                    ctx,
-                    |id: Option<i32>| self.ui_state.close_available_files_dialog(id),
+
+                ScanFilesDialog::new(
+                    &mut |id: Option<i32>| self.ui_state.close_available_files_dialog(id),
                     &cloned_software_lists,
                     selected_software_list_id,
-                );
+                )
+                .show(ctx);
             }
 
             if self.ui_state.message_dialog_options.show {
                 let message_dialog_options = self.ui_state.message_dialog_options.message.clone();
-                show_message_dialog(ctx, &message_dialog_options, &mut || {
+                MessageDialog::new(ctx, &message_dialog_options, &mut || {
                     self.ui_state.close_message_dialog();
                 })
+                .show();
             }
 
             self.ui_state.on_update();

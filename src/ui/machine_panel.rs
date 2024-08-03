@@ -27,7 +27,3 @@ impl<'a> MachinePanel<'a> {
             });
     }
 }
-
-pub fn show_machine_panel(ui: &mut egui::Ui, selected_machine: &Option<Machine>) {
-    MachinePanel::new(ui, selected_machine).show();
-}

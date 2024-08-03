@@ -52,14 +52,3 @@ impl<'a> ScanFilesDialog<'a> {
         });
     }
 }
-
-pub fn show_scan_files_dialog<F>(
-    ctx: &egui::Context,
-    mut close_dialog: F,
-    software_lists: &Vec<SoftwareList>,
-    selected_software_list_id: i32,
-) where
-    F: FnMut(Option<i32>) -> (),
-{
-    ScanFilesDialog::new(&mut close_dialog, software_lists, selected_software_list_id).show(ctx);
-}

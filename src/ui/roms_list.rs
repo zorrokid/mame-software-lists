@@ -57,11 +57,3 @@ impl<'a> RomsList<'a> {
             });
     }
 }
-
-pub fn show_roms_list(
-    ui: &mut egui::Ui,
-    rom_selection_options: &RomSelectionOptions,
-    on_rom_selected: &mut dyn FnMut(Option<Rom>),
-) {
-    RomsList::new(ui, rom_selection_options, on_rom_selected).show();
-}

@@ -30,8 +30,3 @@ impl<'a> MessageDialog<'a> {
         });
     }
 }
-
-pub fn show_message_dialog(ctx: &egui::Context, message: &String, close_dialog: &mut dyn FnMut()) {
-    let mut dialog = MessageDialog::new(ctx, message, close_dialog);
-    dialog.show();
-}
