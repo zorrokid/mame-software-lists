@@ -25,12 +25,12 @@ pub struct EmulatorError {
     pub message: String,
 }
 
-pub fn get_emulators_by_system_id(system_id: String) -> Result<Vec<Emulator>, EmulatorError> {
+pub fn get_emulators_by_system_id(system_id: &String) -> Result<Vec<Emulator>, EmulatorError> {
     let all_emulators = read_emulators(EMULATORS_CONFIG_PATH.to_string());
 
     all_emulators
         .iter()
-        .find(|e| e.system == system_id)
+        .find(|e| e.system == *system_id)
         .ok_or_else(|| EmulatorError {
             message: format!("No emulators found for system {}", system_id),
         })

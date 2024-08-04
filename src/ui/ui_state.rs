@@ -110,22 +110,22 @@ impl UiState {
 
     pub fn on_system_changed(&mut self, system: Option<System>) {
         if let Some(system) = system.clone() {
-            self.fetch_software_lists_for_system(system.id);
-            self.fetch_emulators_for_system(system.name);
+            self.fetch_software_lists_for_system(&system);
+            self.fetch_emulators_for_system(&system);
         }
         self.system_selection_options.selected = system;
     }
 
     pub fn on_software_list_selection_changed(&mut self, software_list: Option<SoftwareList>) {
         if let Some(software_list) = software_list.clone() {
-            self.fetch_machines_for_software_list(software_list.id);
+            self.fetch_machines_for_software_list(&software_list);
         }
         self.software_list_selection_options.selected = software_list;
     }
 
     pub fn on_machine_selection_changed(&mut self, machine: Option<Machine>) {
         if let Some(machine) = machine.clone() {
-            self.fetch_roms_for_machine(machine.id);
+            self.fetch_roms_for_machine(&machine);
         }
         self.machine_selection_options.selected = machine;
     }
@@ -180,9 +180,9 @@ impl UiState {
         thread::spawn(move || {
             // NOTE: set_directory for Linux seems to be working for GTK only, see set_directory comments
             if let Some(path) = FileDialog::new().set_directory(dat_file_folder).pick_file() {
-                sender.send(Some(path)).unwrap();
+                sender.send(Some(path))
             } else {
-                sender.send(None).unwrap();
+                sender.send(None)
             }
         });
 
@@ -202,7 +202,7 @@ impl UiState {
             thread::spawn(move || {
                 let mut scanner = SoftwareListFileScanner::new(rom_path);
                 let result = scanner.scan_files(&software_list_cloned);
-                sender.send(Some(result)).unwrap(); // TODO: why unwrap?
+                sender.send(Some(result))
             });
 
             self.software_list_file_scanner_receiver = Some(receiver);
@@ -264,9 +264,9 @@ impl UiState {
         }
     }
 
-    fn fetch_software_lists_for_system(&mut self, system_id: i32) {
+    fn fetch_software_lists_for_system(&mut self, system: &System) {
         self.software_list_selection_options.items =
-            match self.data_access.get_software_lists_for_system(system_id) {
+            match self.data_access.get_software_lists_for_system(system.id) {
                 Ok(s_lists) => s_lists,
                 Err(e) => {
                     self.add_message(e.message);
@@ -275,8 +275,8 @@ impl UiState {
             }
     }
 
-    fn fetch_emulators_for_system(&mut self, system_name: String) {
-        self.emulator_selection_options.items = match get_emulators_by_system_id(system_name) {
+    fn fetch_emulators_for_system(&mut self, system: &System) {
+        self.emulator_selection_options.items = match get_emulators_by_system_id(&system.name) {
             Ok(emulators) => emulators,
             Err(e) => {
                 self.add_message(e.message);
@@ -284,24 +284,20 @@ impl UiState {
             }
         }
     }
-    fn fetch_machines_for_software_list(&mut self, s_list_id: i32) {
-        self.machine_selection_options.items =
-            match self.data_access.get_machines_for_software_list(s_list_id) {
-                Ok(machines) => machines,
-                Err(e) => {
-                    self.add_message(e.message);
-                    Vec::new()
-                }
+    fn fetch_machines_for_software_list(&mut self, software_list: &SoftwareList) {
+        self.machine_selection_options.items = match self
+            .data_access
+            .get_machines_for_software_list(software_list.id)
+        {
+            Ok(machines) => machines,
+            Err(e) => {
+                self.add_message(e.message);
+                Vec::new()
             }
+        }
     }
 
-    fn fetch_roms_for_machine(&mut self, machine_id: i32) {
-        let machine = self
-            .machine_selection_options
-            .items
-            .iter()
-            .find(|m| m.id == machine_id)
-            .unwrap();
+    fn fetch_roms_for_machine(&mut self, machine: &Machine) {
         self.rom_selection_options.items = match self.data_access.get_roms_for_machine(machine) {
             Ok(roms) => roms,
             Err(e) => {
