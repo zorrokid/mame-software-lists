@@ -2,8 +2,8 @@ use eframe::egui;
 
 use super::{
     combobox::ComboBox, machine_panel::MachinePanel, machines_list::MachinesList,
-    message_dialog::MessageDialog, roms_list::RomsList, scan_files_dialog::ScanFilesDialog,
-    ui_state::UiState,
+    message_dialog::MessageDialog, roms_list::RomsList,
+    software_list_selection_dialog::SoftwareListSelectionDialog, ui_state::UiState,
 };
 
 use crate::configuration::emulators::Emulator;
@@ -106,21 +106,14 @@ impl eframe::App for MameSoftwareListApp {
                 .response
             });
 
-            if self.ui_state.scan_files_dialog_options.show {
-                let cloned_software_lists = self
-                    .ui_state
-                    .scan_files_dialog_options
-                    .software_lists
-                    .clone();
-                let selected_software_list_id = self
-                    .ui_state
-                    .scan_files_dialog_options
-                    .selected_software_list_id;
-
-                ScanFilesDialog::new(
-                    &mut |id: Option<i32>| self.ui_state.close_available_files_dialog(id),
-                    &cloned_software_lists,
-                    selected_software_list_id,
+            if self.ui_state.software_list_selection_dialog_options.show {
+                let software_lists = self.ui_state.get_all_software_lists();
+                SoftwareListSelectionDialog::new(
+                    &mut |software_list: Option<&SoftwareList>| {
+                        self.ui_state
+                            .close_software_list_selection_dialog(software_list)
+                    },
+                    &software_lists,
                 )
                 .show(ctx);
             }

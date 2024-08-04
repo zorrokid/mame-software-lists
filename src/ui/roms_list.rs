@@ -1,18 +1,17 @@
 use crate::models::Rom;
+use crate::ui::selection_options::SelectionOptions;
 use eframe::egui;
-
-pub type RomSelectionOptions = crate::ui::selection_options::SelectionOptions<Rom>;
 
 pub struct RomsList<'a> {
     ui: &'a mut egui::Ui,
-    rom_selection_options: &'a RomSelectionOptions,
+    rom_selection_options: &'a SelectionOptions<Rom>,
     on_rom_selected: &'a mut dyn FnMut(Option<Rom>),
 }
 
 impl<'a> RomsList<'a> {
     pub fn new(
         ui: &'a mut egui::Ui,
-        rom_selection_options: &'a RomSelectionOptions,
+        rom_selection_options: &'a SelectionOptions<Rom>,
         on_rom_selected: &'a mut dyn FnMut(Option<Rom>),
     ) -> Self {
         Self {
