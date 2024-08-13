@@ -70,9 +70,63 @@ impl UiState {
         }
     }
 
+    // change state
+
     pub fn close_message_dialog(&mut self) {
         self.message_dialog_options.show = false;
     }
+
+    pub fn add_message(&mut self, message: String) {
+        self.message_dialog_options = MessageDialogOptions {
+            show: true,
+            message: message.clone(),
+        };
+        self.console_messages.push(message);
+    }
+
+    pub fn add_console_message(&mut self, message: String) {
+        self.console_messages.push(message);
+    }
+
+    pub fn scan_available_files(&mut self) {
+        self.software_list_selection_dialog_options.show = true;
+    }
+
+    // start background tasks
+
+    pub fn add_software_list_data_file(&mut self) {
+        let dat_file_folder = self.paths.software_lists_data_files_folder.clone();
+        let (sender, receiver) = mpsc::channel();
+
+        thread::spawn(move || {
+            // NOTE: set_directory for Linux seems to be working for GTK only, see set_directory comments
+            if let Some(path) = FileDialog::new().set_directory(dat_file_folder).pick_file() {
+                sender.send(Some(path))
+            } else {
+                sender.send(None)
+            }
+        });
+
+        self.file_dialog_receiver = Some(receiver);
+    }
+
+    pub fn close_software_list_selection_dialog(&mut self, software_list: Option<&SoftwareList>) {
+        self.software_list_selection_dialog_options.show = false;
+        if let Some(s_list) = software_list {
+            let rom_path: PathBuf = PathBuf::from(&self.paths.software_lists_roms_folder);
+            let (sender, receiver) = mpsc::channel();
+            let software_list_cloned = s_list.clone();
+            thread::spawn(move || {
+                let mut scanner = SoftwareListFileScanner::new(rom_path);
+                let result = scanner.scan_files(&software_list_cloned);
+                sender.send(Some(result))
+            });
+
+            self.software_list_file_scanner_receiver = Some(receiver);
+        }
+    }
+
+    // data access
 
     pub fn update_matched_files(&mut self, result: SoftwareListScannerResult) {
         let matching_files_count = self
@@ -96,17 +150,18 @@ impl UiState {
         }
     }
 
-    pub fn add_message(&mut self, message: String) {
-        self.message_dialog_options = MessageDialogOptions {
-            show: true,
-            message: message.clone(),
-        };
-        self.console_messages.push(message);
+    pub fn get_all_software_lists(&mut self) -> Vec<SoftwareList> {
+        let result = self.data_access.get_software_lists();
+        match result {
+            Ok(s_lists) => s_lists,
+            Err(e) => {
+                self.add_message(e.message);
+                Vec::new()
+            }
+        }
     }
 
-    pub fn add_console_message(&mut self, message: String) {
-        self.console_messages.push(message);
-    }
+    // handlers
 
     pub fn on_system_changed(&mut self, system: Option<System>) {
         if let Some(system) = system.clone() {
@@ -138,7 +193,7 @@ impl UiState {
         self.rom_selection_options.selected = selected_rom;
     }
 
-    pub fn start_button_clicked(&mut self) {
+    pub fn on_start_button_clicked(&mut self) {
         if self.system_selection_options.selected.is_none() {
             self.add_message("Please select a system".to_string());
             return;
@@ -173,56 +228,9 @@ impl UiState {
         }
     }
 
-    pub fn add_software_list_data_file(&mut self) {
-        let dat_file_folder = self.paths.software_lists_data_files_folder.clone();
-        let (sender, receiver) = mpsc::channel();
-
-        thread::spawn(move || {
-            // NOTE: set_directory for Linux seems to be working for GTK only, see set_directory comments
-            if let Some(path) = FileDialog::new().set_directory(dat_file_folder).pick_file() {
-                sender.send(Some(path))
-            } else {
-                sender.send(None)
-            }
-        });
-
-        self.file_dialog_receiver = Some(receiver);
-    }
-
-    pub fn scan_available_files(&mut self) {
-        self.software_list_selection_dialog_options.show = true;
-    }
-
-    pub fn close_software_list_selection_dialog(&mut self, software_list: Option<&SoftwareList>) {
-        self.software_list_selection_dialog_options.show = false;
-        if let Some(s_list) = software_list {
-            let rom_path: PathBuf = PathBuf::from(&self.paths.software_lists_roms_folder);
-            let (sender, receiver) = mpsc::channel();
-            let software_list_cloned = s_list.clone();
-            thread::spawn(move || {
-                let mut scanner = SoftwareListFileScanner::new(rom_path);
-                let result = scanner.scan_files(&software_list_cloned);
-                sender.send(Some(result))
-            });
-
-            self.software_list_file_scanner_receiver = Some(receiver);
-        }
-    }
-
     pub fn on_update(&mut self) {
         self.check_software_list_file_scanner_receiver();
         self.check_file_dialog_receiver();
-    }
-
-    pub fn get_all_software_lists(&mut self) -> Vec<SoftwareList> {
-        let result = self.data_access.get_software_lists();
-        match result {
-            Ok(s_lists) => s_lists,
-            Err(e) => {
-                self.add_message(e.message);
-                Vec::new()
-            }
-        }
     }
 
     // private

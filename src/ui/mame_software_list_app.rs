@@ -76,7 +76,7 @@ impl eframe::App for MameSoftwareListApp {
                 .show();
 
                 if ui.button("Start").clicked() {
-                    self.ui_state.start_button_clicked();
+                    self.ui_state.on_start_button_clicked();
                 }
             });
 
