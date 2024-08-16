@@ -11,12 +11,14 @@ use crate::models::{SoftwareList, System};
 
 pub struct MameSoftwareListApp {
     ui_state: UiState,
+    machines_list: MachinesList,
 }
 
 impl MameSoftwareListApp {
     pub fn new() -> Self {
         Self {
             ui_state: UiState::new(),
+            machines_list: MachinesList::new(),
         }
     }
 }
@@ -83,14 +85,13 @@ impl eframe::App for MameSoftwareListApp {
             ui.add_sized(ui.available_size(), |ui: &mut egui::Ui| {
                 ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
                     ui.centered_and_justified(|ui| {
-                        MachinesList::new(
+                        self.machines_list.show(
                             ui,
                             &self.ui_state.machine_selection_options.clone(),
                             &mut |machine_id| {
                                 self.ui_state.on_machine_selection_changed(machine_id)
                             },
-                        )
-                        .show();
+                        );
                     });
                     ui.with_layout(egui::Layout::top_down(egui::Align::TOP), |ui| {
                         MachinePanel::new(ui, &self.ui_state.machine_selection_options.selected)
